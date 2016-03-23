@@ -13,6 +13,8 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.ViewConfiguration;
 
+import java.util.HashMap;
+
 public final class ResourcesHolder {
 
     private final Context context;
@@ -27,6 +29,8 @@ public final class ResourcesHolder {
 
     private static int minimumFlingVelocity = 50;
     private static int maximumFlingVelocity = 8000;
+
+    private HashMap<Float, Float> dps = new HashMap<>();
 
     ResourcesHolder(@NonNull Context context) {
         this.context = context;
@@ -89,7 +93,12 @@ public final class ResourcesHolder {
     }
 
     public float dpToPx(float dp) {
-        return ScreenHelper.dpToPx(resources, dp);
+        if (dps.containsKey(dp)) {
+            return dps.get(dp);
+        }
+        float dpToPx = ScreenHelper.dpToPx(resources, dp);
+        dps.put(dp, dpToPx);
+        return dpToPx;
     }
 
     public int getMinimumFlingVelocity() {

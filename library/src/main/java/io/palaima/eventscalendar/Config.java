@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import io.palaima.eventscalendar.data.CalendarEvent;
@@ -63,6 +64,12 @@ public class Config {
 
     private float categoriesHeight = 48;
 
+    private float maxZoomInHours = 2;
+
+    private float maxZoomOutHours = 8;
+
+    private Date activeDate = new Date();
+
     private Config() {
 
     }
@@ -79,8 +86,8 @@ public class Config {
         return mode;
     }
 
-    public List<? extends Category> getCategories() {
-        return categories;
+    public List<Category> getCategories() {
+        return Collections.unmodifiableList(categories);
     }
 
     public int getCategoriesCount() {
@@ -159,6 +166,14 @@ public class Config {
         return getEndHour() - getStartHour();
     }
 
+    public float getMaxZoomInHours() {
+        return maxZoomInHours;
+    }
+
+    public float getMaxZoomOutHours() {
+        return maxZoomOutHours;
+    }
+
     public int getDaysCount() {
         switch (getMode()) {
             case DAY:
@@ -168,6 +183,10 @@ public class Config {
             default:
                 throw new IllegalStateException("Mode is not supported");
         }
+    }
+
+    public Date getActiveDate() {
+        return activeDate;
     }
 
     public ResourcesHolder getResourcesHolder() {

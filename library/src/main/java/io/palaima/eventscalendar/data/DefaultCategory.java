@@ -16,7 +16,6 @@ public class DefaultCategory implements Category {
     }
 
     @Nullable
-    @Override
     public String getName() {
         return null;
     }

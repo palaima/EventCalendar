@@ -331,18 +331,27 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
         if (properties.isLogEnabled())
             Log.i(TAG, "Preparing...");
 
-        /*if (mRenderer != null)
-            mRenderer.initBuffers();
 
+        float hoursCount = config.getHoursCount();
+        float maxZoomOutHours = config.getMaxZoomOutHours();
 
+        float zoomOutHours = hoursCount >= maxZoomOutHours ? maxZoomOutHours : hoursCount;
+        float minScale = hoursCount / zoomOutHours;
 
-        mAxisRendererLeft.computeAxis(mAxisLeft.mAxisMinimum, mAxisLeft.mAxisMaximum);
-        mAxisRendererRight.computeAxis(mAxisRight.mAxisMinimum, mAxisRight.mAxisMaximum);
+        //viewPortHandler.setMinimumScaleX(minScale);
+        viewPortHandler.setMinimumScaleY(minScale);
 
-        mXAxisRenderer.computeAxis(mData.getXValMaximumLength(), mData.getXVals());
+        float maxZoomInHours = config.getMaxZoomInHours();
 
-        if (mLegend != null)
-            mLegendRenderer.computeLegend(mData);*/
+        float zoomInHours = hoursCount >= maxZoomInHours ? maxZoomInHours : hoursCount;
+
+        float maxScale = hoursCount / zoomInHours;
+
+        //viewPortHandler.setMaximumScaleX(maxScale);
+        viewPortHandler.setMaximumScaleY(maxScale);
+
+        Log.d(TAG, "max scale " + maxScale);
+        Log.d(TAG, "min scale " + minScale);
 
         mOffsetsCalculated = false;
         calcMinMax();
@@ -363,11 +372,6 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
             return;
         }
 
-        float offsetLeft = 0f,
-            offsetRight = 0f,
-            offsetTop = 0f,
-            offsetBottom = 0f;
-
         float minOffset = config.getResourcesHolder().dpToPx(config.getMinOffset());
 
         float offsetLeftExtra = config.getResourcesHolder().dpToPx(config.getExtraLeftOffset()),
@@ -375,10 +379,10 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
             offsetTopExtra = config.getResourcesHolder().dpToPx(config.getExtraTopOffset()),
             offsetBottomExtra = config.getResourcesHolder().dpToPx(config.getExtraBottomOffset());
 
-        offsetLeft = Math.max(minOffset, offsetLeftExtra);
-        offsetTop = Math.max(minOffset, offsetRightExtra);
-        offsetRight = Math.max(minOffset, offsetTopExtra);
-        offsetBottom = Math.max(minOffset, offsetBottomExtra);
+        float offsetLeft = Math.max(minOffset, offsetLeftExtra);
+        float offsetTop = Math.max(minOffset, offsetRightExtra);
+        float offsetRight = Math.max(minOffset, offsetTopExtra);
+        float offsetBottom = Math.max(minOffset, offsetBottomExtra);
 
         if (config.isTimeScaleEnabled()) {
             offsetLeft += config.getResourcesHolder().dpToPx(config.getTimeScaleWidth());
@@ -387,13 +391,6 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
         if (config.isCategoriesEnabled()) {
             offsetTop += config.getResourcesHolder().dpToPx(config.getCategoriesHeight());
         }
-/*
-        offsetTop += config.getResourcesHolder().dpToPx(config.getExtraTopOffset());
-        offsetRight += config.getResourcesHolder().dpToPx(config.getExtraRightOffset());
-        offsetBottom += config.getResourcesHolder().dpToPx(config.getExtraBottomOffset());
-        offsetLeft += config.getResourcesHolder().dpToPx(config.getExtraLeftOffset());*/
-
-
 
         viewPortHandler.restrainViewPort(
             offsetLeft,
@@ -496,6 +493,8 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
         this.config = config;
 
         Log.d("Config", "categories " + config.getCategoriesCount());
+
+
 
         notifyDataSetChanged();
         ViewCompat.postInvalidateOnAnimation(this);

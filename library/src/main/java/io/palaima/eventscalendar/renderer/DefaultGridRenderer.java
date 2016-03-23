@@ -9,7 +9,7 @@ import io.palaima.eventscalendar.ViewPortHandler;
 
 public final class DefaultGridRenderer extends GridRenderer {
 
-    private final Path  gridLinePath        = new Path();
+    private final Path gridLinePath = new Path();
 
     // pre allocate to save performance (dont allocate in loop)
     private float[] position = new float[] {

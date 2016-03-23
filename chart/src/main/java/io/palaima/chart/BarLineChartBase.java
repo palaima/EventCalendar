@@ -254,12 +254,13 @@ public abstract class BarLineChartBase<T extends BarLineScatterCandleBubbleData<
         drawDescription(canvas);
 
         if (mLogEnabled) {
-            long drawtime = (System.currentTimeMillis() - starttime);
-            totalTime += drawtime;
+            long drawTime = (System.currentTimeMillis() - starttime);
+            totalTime += drawTime;
             drawCycles += 1;
             long average = totalTime / drawCycles;
-            Log.i(LOG_TAG, "Drawtime: " + drawtime + " ms, average: " + average + " ms, cycles: "
-                    + drawCycles);
+            if (drawCycles % 100 == 0) {
+                Log.i(LOG_TAG, "Draw Time: " + drawTime + " ms, average: " + average + " ms, cycles: " + drawCycles);
+            }
         }
     }
 

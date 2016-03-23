@@ -1,10 +1,8 @@
-
 package io.palaima.eventscalendar;
 
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -113,8 +111,9 @@ public class ViewPortHandler {
     }
 
     public void restrainViewPort(float offsetLeft, float offsetTop, float offsetRight,
-                                 float offsetBottom) {
-        mContentRect.set(offsetLeft, offsetTop, mChartWidth - offsetRight, mChartHeight - offsetBottom);
+        float offsetBottom) {
+        mContentRect.set(offsetLeft, offsetTop, mChartWidth - offsetRight, mChartHeight
+            - offsetBottom);
     }
 
     public float offsetLeft() {
@@ -171,21 +170,6 @@ public class ViewPortHandler {
 
     public float getChartWidth() {
         return mChartWidth;
-    }
-
-    public void printParams() {
-        Log.d("ViewPortHandler", "offsetLeft " + offsetLeft());
-        Log.d("ViewPortHandler", "offsetRight " + offsetRight());
-        Log.d("ViewPortHandler", "offsetTop " + offsetTop());
-        Log.d("ViewPortHandler", "offsetBottom " + offsetBottom());
-        Log.d("ViewPortHandler", "contentLeft " + contentLeft());
-        Log.d("ViewPortHandler", "contentRight " + contentRight());
-        Log.d("ViewPortHandler", "contentTop " + contentTop());
-        Log.d("ViewPortHandler", "contentBottom " + contentBottom());
-        Log.d("ViewPortHandler", "contentWidth " + contentWidth());
-        Log.d("ViewPortHandler", "contentHeight " + contentHeight());
-        Log.d("ViewPortHandler", "getChartWidth " + getChartWidth());
-        Log.d("ViewPortHandler", "getChartHeight " + getChartHeight());
     }
 
     /**
@@ -366,7 +350,7 @@ public class ViewPortHandler {
     }
 
     /**
-     * buffer for storing matrix values
+     * buffer for storing the 9 matrix values of a 3x3 matrix
      */
     protected final float[] matrixBuffer = new float[9];
 
@@ -405,7 +389,7 @@ public class ViewPortHandler {
         float curTransY = matrixBuffer[Matrix.MTRANS_Y];
         float curScaleY = matrixBuffer[Matrix.MSCALE_Y];
 
-        // min scale-x is 1f, max is the max float
+        // min scale-x is 1f
         mScaleX = Math.min(Math.max(mMinScaleX, curScaleX), mMaxScaleX);
 
         // min scale-y is 1f
@@ -420,12 +404,10 @@ public class ViewPortHandler {
         }
 
         float maxTransX = -width * (mScaleX - 1f);
-        float newTransX = Math.min(Math.max(curTransX, maxTransX - mTransOffsetX), mTransOffsetX);
-        mTransX = newTransX;
+        mTransX = Math.min(Math.max(curTransX, maxTransX - mTransOffsetX), mTransOffsetX);
 
         float maxTransY = height * (mScaleY - 1f);
-        float newTransY = Math.max(Math.min(curTransY, maxTransY + mTransOffsetY), -mTransOffsetY);
-        mTransY = newTransY;
+        mTransY = Math.max(Math.min(curTransY, maxTransY + mTransOffsetY), -mTransOffsetY);
 
         matrixBuffer[Matrix.MTRANS_X] = mTransX;
         matrixBuffer[Matrix.MSCALE_X] = mScaleX;
@@ -545,21 +527,21 @@ public class ViewPortHandler {
     }
 
     public boolean isInBoundsLeft(float x) {
-        return mContentRect.left <= x;
+        return mContentRect.left <= x ? true : false;
     }
 
     public boolean isInBoundsRight(float x) {
         x = (float) ((int) (x * 100.f)) / 100.f;
-        return mContentRect.right >= x;
+        return mContentRect.right >= x ? true : false;
     }
 
     public boolean isInBoundsTop(float y) {
-        return mContentRect.top <= y ;
+        return mContentRect.top <= y ? true : false;
     }
 
     public boolean isInBoundsBottom(float y) {
         y = (float) ((int) (y * 100.f)) / 100.f;
-        return mContentRect.bottom >= y;
+        return mContentRect.bottom >= y ? true : false;
     }
 
     /**
@@ -574,6 +556,22 @@ public class ViewPortHandler {
      */
     public float getScaleY() {
         return mScaleY;
+    }
+
+    public float getMinScaleX() {
+        return mMinScaleX;
+    }
+
+    public float getMaxScaleX() {
+        return mMaxScaleX;
+    }
+
+    public float getMinScaleY() {
+        return mMinScaleY;
+    }
+
+    public float getMaxScaleY() {
+        return mMaxScaleY;
     }
 
     /**
@@ -658,7 +656,7 @@ public class ViewPortHandler {
      * @return
      */
     public boolean hasNoDragOffset() {
-        return mTransOffsetX <= 0 && mTransOffsetY <= 0;
+        return mTransOffsetX <= 0 && mTransOffsetY <= 0 ? true : false;
     }
 
     /**
@@ -679,4 +677,21 @@ public class ViewPortHandler {
         return (mScaleX < mMaxScaleX);
     }
 
+    /**
+     * Returns true if the chart is not yet fully zoomed out on the y-axis
+     *
+     * @return
+     */
+    public boolean canZoomOutMoreY() {
+        return (mScaleY > mMinScaleY);
+    }
+
+    /**
+     * Returns true if the chart is not yet fully zoomed in on the y-axis
+     *
+     * @return
+     */
+    public boolean canZoomInMoreY() {
+        return (mScaleY < mMaxScaleY);
+    }
 }

@@ -1,0 +1,15 @@
+CREATE TABLE calendar_category (
+  _id LONG NOT NULL PRIMARY KEY AUTOINCREMENT,
+  name STRING NOT NULL
+);
+
+-- Further SQL statements are proceeded by an identifier. This will be used to name the constant
+-- in the generated Java code.
+select_by_id:
+SELECT *
+FROM calendar_category
+WHERE _id = ?;
+
+select_all:
+SELECT *
+FROM calendar_category;

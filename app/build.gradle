@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.neenbedankt.android-apt'
+apply plugin: 'com.squareup.sqldelight'
 
 android {
     compileSdkVersion 'Google Inc.:Google APIs:23'
@@ -26,4 +28,27 @@ dependencies {
     compile 'com.android.support:design:23.2.0'
     compile project(':chart')
     compile project(':library')
+
+    compile 'io.palaima.debugdrawer:debugdrawer:0.7.0'
+    compile 'io.palaima.debugdrawer:debugdrawer-commons:0.7.0'
+    compile 'io.palaima.debugdrawer:debugdrawer-actions:0.7.0'
+
+    provided 'javax.annotation:jsr250-api:1.0'
+    provided 'com.google.auto.value:auto-value:1.2-rc1'
+    apt 'com.google.auto.value:auto-value:1.2-rc1'
+    provided 'com.gabrielittner.auto.value:auto-value-cursor-annotations:0.2.0'
+    apt 'com.gabrielittner.auto.value:auto-value-cursor:0.2.0'
+
+    compile 'com.squareup.sqlbrite:sqlbrite:0.6.2'
+
+    compile 'io.reactivex:rxjava:1.1.2'
+    compile 'io.reactivex:rxandroid:1.1.0'
+
+    compile('com.github.afollestad.material-dialogs:core:0.8.5.7@aar') {
+        transitive = true
+    }
+    compile 'com.github.clans:fab:1.6.2'
+
+    compile 'com.jakewharton:butterknife:7.0.1'
+    compile 'com.jakewharton.timber:timber:4.1.1'
 }

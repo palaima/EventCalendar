@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 
 import io.palaima.eventscalendar.CalendarView;
+import io.palaima.eventscalendar.Properties;
 import io.palaima.eventscalendar.ResourcesHolder;
 import io.palaima.eventscalendar.Transformer;
 import io.palaima.eventscalendar.ViewPortHandler;
@@ -65,6 +66,11 @@ public class BarLineChartTouchListener extends ChartTouchListener {
      */
     private float mDragTriggerDist;
 
+    /**
+     * the minimum distance between the pointers that will trigger a zoom gesture
+     */
+    private float mMinScalePointerDistance;
+
     public BarLineChartTouchListener(CalendarView chart, ResourcesHolder resources, Matrix touchMatrix) {
         super(chart);
         this.resources = resources;
@@ -74,15 +80,13 @@ public class BarLineChartTouchListener extends ChartTouchListener {
 
         // this equals to about 9 pixels on a 5.5" FHD screen
         this.mDragTriggerDist = resources.dpToPx(3);
+
+        this.mMinScalePointerDistance = resources.dpToPx(3.5f);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-
-        float[] position = new float[] {
-            500f, 500f
-        };
 
         if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
@@ -250,13 +254,7 @@ public class BarLineChartTouchListener extends ChartTouchListener {
         }
 
         // Perform the transformation, update the chart
-        // if (needsRefresh())
         mMatrix = mChart.getViewPortHandler().refresh(this.mMatrix, mChart, true);
-
-        transformer.pointValuesToPixel(position);
-
-        //Log.d("TOUCH", "===========================================================");
-        //Log.d("TOUCH", "pixels " + position[0] + " " + position[1]);
 
         return true; // indicate event was handled
     }
@@ -322,28 +320,37 @@ public class BarLineChartTouchListener extends ChartTouchListener {
             // event
             float totalDist = spacing(event);
 
-            if (totalDist > 10f) {
+            if (totalDist > mMinScalePointerDistance) {
+
+                ViewPortHandler viewPortHandler = mChart.getViewPortHandler();
+
+                Properties properties = mChart.getProperties();
 
                 // get the translation
                 PointF t = getTrans(mTouchPointCenter.x, mTouchPointCenter.y);
 
                 // take actions depending on the activated touch
                 // mode
-                if (mTouchMode == PINCH_ZOOM && mChart.getProperties().isPinchZoomEnabled()) {
+                if (mTouchMode == PINCH_ZOOM && properties.isPinchZoomEnabled()) {
 
                     mLastGesture = ChartGesture.PINCH_ZOOM;
 
                     float scale = totalDist / mSavedDist; // total scale
 
                     boolean isZoomingOut = (scale < 1);
+
                     boolean canZoomMoreX = isZoomingOut ?
-                            mChart.getViewPortHandler().canZoomOutMoreX() :
-                            mChart.getViewPortHandler().canZoomInMoreX();
+                            viewPortHandler.canZoomOutMoreX() :
+                        viewPortHandler.canZoomInMoreX();
 
-                    float scaleX = (mChart.getProperties().isScaleXEnabled()) ? scale : 1f;
-                    float scaleY = (mChart.getProperties().isScaleYEnabled()) ? scale : 1f;
+                    boolean canZoomMoreY = isZoomingOut ?
+                        viewPortHandler.canZoomOutMoreY() :
+                        viewPortHandler.canZoomInMoreY();
 
-                    if (mChart.getProperties().isScaleYEnabled() || canZoomMoreX) {
+                    float scaleX = (properties.isScaleXEnabled()) ? scale : 1f;
+                    float scaleY = (properties.isScaleYEnabled()) ? scale : 1f;
+
+                    if (canZoomMoreY || canZoomMoreX) {
 
                         mMatrix.set(mSavedMatrix);
                         mMatrix.postScale(scaleX, scaleY, t.x, t.y);
@@ -352,7 +359,7 @@ public class BarLineChartTouchListener extends ChartTouchListener {
                             l.onChartScale(event, scaleX, scaleY);
                     }
 
-                } else if (mTouchMode == X_ZOOM && mChart.getProperties().isScaleXEnabled()) {
+                } else if (mTouchMode == X_ZOOM && properties.isScaleXEnabled()) {
 
                     mLastGesture = ChartGesture.X_ZOOM;
 
@@ -361,8 +368,8 @@ public class BarLineChartTouchListener extends ChartTouchListener {
 
                     boolean isZoomingOut = (scaleX < 1);
                     boolean canZoomMoreX = isZoomingOut ?
-                            mChart.getViewPortHandler().canZoomOutMoreX() :
-                            mChart.getViewPortHandler().canZoomInMoreX();
+                        viewPortHandler.canZoomOutMoreX() :
+                        viewPortHandler.canZoomInMoreX();
 
                     if (canZoomMoreX) {
 
@@ -373,20 +380,35 @@ public class BarLineChartTouchListener extends ChartTouchListener {
                             l.onChartScale(event, scaleX, 1f);
                     }
 
-                } else if (mTouchMode == Y_ZOOM && mChart.getProperties().isScaleYEnabled()) {
+                } else if (mTouchMode == Y_ZOOM && properties.isScaleYEnabled()) {
 
                     mLastGesture = ChartGesture.Y_ZOOM;
 
                     float yDist = getYDist(event);
                     float scaleY = yDist / mSavedYDist; // y-axis scale
 
-                    mMatrix.set(mSavedMatrix);
+                    boolean isZoomingOut = (scaleY < 1);
+
+                    boolean canZoomMoreY = isZoomingOut ?
+                        viewPortHandler.canZoomOutMoreY() :
+                        viewPortHandler.canZoomInMoreY();
+
+                    if (canZoomMoreY) {
+
+                        mMatrix.set(mSavedMatrix);
+                        mMatrix.postScale(1f, scaleY, t.x, t.y);
+
+                        if (l != null)
+                            l.onChartScale(event, 1f, scaleY);
+                    }
+
+                   /* mMatrix.set(mSavedMatrix);
 
                     // y-axis comes from top to bottom, revert y
                     mMatrix.postScale(1f, scaleY, t.x, t.y);
 
                     if (l != null)
-                        l.onChartScale(event, 1f, scaleY);
+                        l.onChartScale(event, 1f, scaleY);*/
                 }
             }
         }
