@@ -13,3 +13,7 @@ WHERE _id = ?;
 select_all:
 SELECT *
 FROM calendar_category;
+
+delete_by_id:
+DELETE FROM calendar_category
+WHERE _id = ?;

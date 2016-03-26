@@ -51,4 +51,6 @@ dependencies {
 
     compile 'com.jakewharton:butterknife:7.0.1'
     compile 'com.jakewharton.timber:timber:4.1.1'
+
+    compile 'com.github.Kennyc1012:BottomSheet:2.1.1'
 }
