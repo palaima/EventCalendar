@@ -1,22 +1,23 @@
 package io.palaima.eventscalendar.renderer;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 
 import io.palaima.eventscalendar.Config;
+import io.palaima.eventscalendar.DefaultTimeConverter;
 import io.palaima.eventscalendar.Transformer;
 import io.palaima.eventscalendar.ViewPortHandler;
 
 public final class DefaultTimeScaleRenderer extends TimeScaleRenderer {
 
     private final Path  gridLinePath    = new Path();
-
-    private Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final DefaultTimeConverter defaultTimeConverter = new DefaultTimeConverter();
+    private final Rect textBounds = new Rect();
 
     // pre allocate to save performance (dont allocate in loop)
-    private float[] position = new float[] {
+    private final float[] position = new float[] {
         0f, 0f
     };
 
@@ -27,27 +28,37 @@ public final class DefaultTimeScaleRenderer extends TimeScaleRenderer {
         Transformer transformer
     ) {
 
-        textPaint.setColor(Color.BLACK);
-        textPaint.setTextSize(30);
+        final float offsetTop = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraTopOffset()));
+        final float offsetLeft = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraLeftOffset()));
+        final float width = config.getResourcesHolder().dpToPx(config.getTimeScaleWidth());
+        final float categoriesHeight = config.isCategoriesEnabled() ? config.getResourcesHolder().dpToPx(config.getCategoriesHeight()) : 0;
 
-        float width = config.getResourcesHolder().dpToPx(config.getTimeScaleWidth());
-        float offsetLeft = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraLeftOffset()));
 
-        canvas.drawRect(offsetLeft, viewPortHandler.contentTop(), offsetLeft + width, viewPortHandler.contentBottom(), config.getResourcesHolder().getTimeScaleBackgroundPaint());
+        final float top = offsetTop + categoriesHeight;
+        final float right = offsetLeft + width;
+        final float bottom = top + viewPortHandler.contentHeight();
 
         float ticksPerHour = 60 / config.getTimeScaleTicksEveryMinutes();
 
         float ticksCount = config.getHoursCount() * ticksPerHour;
 
+        canvas.drawRect(offsetLeft, offsetTop, right, bottom, config.getResourcesHolder().getTimeScaleBackgroundPaint());
+
+        final int clipRestoreCount = canvas.save();
+        canvas.clipRect(offsetLeft, top, right, bottom);
+
         for (int i = 0; i < ticksCount; i++) {
 
-            position[1] = -((i+1) * 60 / ticksPerHour);
+            float minutes = ((i + 1) * 60 / ticksPerHour);
+            position[1] = -minutes;
             transformer.pointValuesToPixel(position);
 
             if (viewPortHandler.isInBoundsY(position[1])) {
 
-                if (((i+1) * 60 / ticksPerHour) % 60 == 0) {
-                    canvas.drawText("time", width/2 + offsetLeft, position[1], textPaint);
+                if (minutes % 60 == 0) {
+                    float hours = (minutes / 60);
+                    String s = defaultTimeConverter.interpretTime((int) hours, DefaultTimeConverter.Type.HOUR_24);
+                    drawTextCentred(canvas, config.getResourcesHolder().getTimeScaleTextPaint(), s, width/2 + offsetLeft, position[1]);
                 }
 
                 gridLinePath.moveTo(offsetLeft, position[1]);
@@ -58,5 +69,12 @@ public final class DefaultTimeScaleRenderer extends TimeScaleRenderer {
                 gridLinePath.reset();
             }
         }
+
+        canvas.restoreToCount(clipRestoreCount);
+    }
+
+    public void drawTextCentred(Canvas canvas, Paint paint, String text, float cx, float cy){
+        paint.getTextBounds(text, 0, text.length(), textBounds);
+        canvas.drawText(text, cx - textBounds.exactCenterX(), cy - textBounds.exactCenterY(), paint);
     }
 }

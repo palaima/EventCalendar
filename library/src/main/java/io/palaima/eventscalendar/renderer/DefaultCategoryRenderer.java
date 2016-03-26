@@ -20,22 +20,24 @@ import io.palaima.eventscalendar.data.Category;
 public class DefaultCategoryRenderer extends CategoryRenderer {
 
     // pre allocate to save performance (dont allocate in loop)
-    private float[] startPosition = new float[] {
+    private final float[] startPosition = new float[] {
         0f, 0f
     };
 
     // pre allocate to save performance (dont allocate in loop)
-    private float[] endPosition = new float[] {
+    private final float[] endPosition = new float[] {
         0f, 0f
     };
 
     private boolean initialRun = true;
 
-    private List<Rect> rects = new ArrayList<>();
+    private final List<Rect> rects = new ArrayList<>();
 
-    private DefaultCategoryDateConverter dateConverter = new DefaultCategoryDateConverter();
+    private final DefaultCategoryDateConverter dateConverter = new DefaultCategoryDateConverter();
 
-    private Calendar activeCalendarDate = Calendar.getInstance();
+    private final Calendar activeCalendarDate = Calendar.getInstance();
+
+    private final RectF textBounds = new RectF();
 
     @Override public void renderCategories(
         @NonNull Canvas canvas,
@@ -47,7 +49,7 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
         final float offsetTop = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraTopOffset()));
         final float offsetLeft = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraLeftOffset()));
         final float height = config.getResourcesHolder().dpToPx(config.getCategoriesHeight());
-        final float timeScaleWidth = config.getResourcesHolder().dpToPx(config.getTimeScaleWidth());
+        final float timeScaleWidth = config.isTimeScaleEnabled() ? config.getResourcesHolder().dpToPx(config.getTimeScaleWidth()) : 0;
 
         final float left = offsetLeft + timeScaleWidth;
         final float right = left + viewPortHandler.contentWidth();
@@ -140,17 +142,17 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
     }
 
     private void drawCenteredText(@NonNull Canvas canvas, @NonNull String text, @NonNull Rect areaRect, @NonNull Paint textPaint) {
-        RectF bounds = new RectF(areaRect);
+        textBounds.set(areaRect);
         // measure text width
-        bounds.right = textPaint.measureText(text, 0, text.length());
+        textBounds.right = textPaint.measureText(text, 0, text.length());
         // measure text height
-        bounds.bottom = textPaint.descent() - textPaint.ascent();
+        textBounds.bottom = textPaint.descent() - textPaint.ascent();
 
-        bounds.left += (areaRect.width() - bounds.right) / 2.0f;
-        bounds.top += (areaRect.height() - bounds.bottom) / 2.0f;
+        textBounds.left += (areaRect.width() - textBounds.right) / 2.0f;
+        textBounds.top += (areaRect.height() - textBounds.bottom) / 2.0f;
 
         //TODO clip canvas
-        canvas.drawText(text, bounds.left, bounds.top - textPaint.ascent(), textPaint);
+        canvas.drawText(text, textBounds.left, textBounds.top - textPaint.ascent(), textPaint);
     }
 
     private boolean isInBounds(@NonNull ViewPortHandler viewPortHandler, float left, float right, float startX, float endX) {

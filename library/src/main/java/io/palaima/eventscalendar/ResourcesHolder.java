@@ -21,6 +21,7 @@ public final class ResourcesHolder {
     private final Resources resources;
 
     private Paint categoryTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Paint timeScaleTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint infoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint timeScaleGridPaint       = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint timeScaleBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -66,6 +67,9 @@ public final class ResourcesHolder {
         categoryTextPaint.setColor(Color.rgb(247, 189, 51));
         categoryTextPaint.setTextSize(ScreenHelper.dpToPx(resources, 14f));
 
+        timeScaleTextPaint.setColor(Color.BLACK);
+        timeScaleTextPaint.setTextSize(ScreenHelper.dpToPx(resources, 10f));
+
         infoPaint.setColor(Color.rgb(247, 189, 51)); // orange
         infoPaint.setTextAlign(Paint.Align.CENTER);
         infoPaint.setTextSize(ScreenHelper.dpToPx(resources, 12f));
@@ -97,6 +101,10 @@ public final class ResourcesHolder {
 
     public Paint getCategoryTextPaint() {
         return categoryTextPaint;
+    }
+
+    public Paint getTimeScaleTextPaint() {
+        return timeScaleTextPaint;
     }
 
     public float dpToPx(float dp) {
