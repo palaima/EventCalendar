@@ -35,6 +35,10 @@ public class TestCalendarActivity extends AppCompatActivity {
         calendarView = ((CalendarView) findViewById(R.id.calendar_view));
         bottomSheet = ((FrameLayout) findViewById(R.id.bottom_sheet));
 
+        calendarView.config()
+            .minOffset(16)
+            .set();
+
         final BottomSheetBehavior behavior = BottomSheetBehavior.from(bottomSheet);
         behavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override

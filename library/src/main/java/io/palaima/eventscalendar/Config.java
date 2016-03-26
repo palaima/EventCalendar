@@ -21,7 +21,7 @@ public class Config {
     /**
      * Sets the minimum offset (padding) around the chart, defaults to 15
      */
-    private float minOffset = 16f;
+    private float minOffset = 0f;
 
     /**
      * Extra offsets to be appended to the viewport

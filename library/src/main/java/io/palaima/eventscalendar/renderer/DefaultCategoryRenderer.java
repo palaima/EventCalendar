@@ -1,9 +1,9 @@
 package io.palaima.eventscalendar.renderer;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
@@ -19,8 +19,6 @@ import io.palaima.eventscalendar.data.Category;
 
 public class DefaultCategoryRenderer extends CategoryRenderer {
 
-    private Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
     // pre allocate to save performance (dont allocate in loop)
     private float[] startPosition = new float[] {
         0f, 0f
@@ -33,18 +31,18 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
 
     private boolean initialRun = true;
 
-    private List<Rect> categoryRects = new ArrayList<>();
+    private List<Rect> rects = new ArrayList<>();
 
     private DefaultCategoryDateConverter dateConverter = new DefaultCategoryDateConverter();
 
     private Calendar activeCalendarDate = Calendar.getInstance();
 
     @Override public void renderCategories(
-        @NonNull Canvas canvas, @NonNull Config config, @NonNull ViewPortHandler viewPortHandler, @NonNull Transformer transformer
+        @NonNull Canvas canvas,
+        @NonNull Config config,
+        @NonNull ViewPortHandler viewPortHandler,
+        @NonNull Transformer transformer
     ) {
-
-        textPaint.setColor(Color.BLACK);
-        textPaint.setTextSize(20);
 
         final float offsetTop = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraTopOffset()));
         final float offsetLeft = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraLeftOffset()));
@@ -55,21 +53,22 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
         final float right = left + viewPortHandler.contentWidth();
         final float bottom = offsetTop + height;
 
-        canvas.drawRect(offsetLeft, offsetTop, right, bottom, config.getResourcesHolder().getTimeScaleBackgroundPaint());
-
         final List<Category> categories = config.getCategories();
         final int categoriesCount = categories.size();
         final int columns = categoriesCount * config.getDaysCount();
 
         int currentCategory = 0;
 
-        if (columns != categoryRects.size()) {
+        if (columns != rects.size()) {
             initialRun = true;
-            categoryRects.clear();
+            rects.clear();
         }
 
         final int clipRestoreCount = canvas.save();
         canvas.clipRect(left, offsetTop, right, bottom);
+
+        // Draw background
+        canvas.drawRect(left, offsetTop, right, bottom, config.getResourcesHolder().getTimeScaleBackgroundPaint());
 
         for (int i = 0; i < columns; i++) {
 
@@ -79,19 +78,22 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
             transformer.pointValuesToPixel(endPosition);
 
             if (initialRun) {
-                categoryRects.add(new Rect((int) startPosition[0], (int) offsetTop, (int) endPosition[0], (int) bottom));
+                // Initialize category rect on the first run
+                rects.add(new Rect((int) startPosition[0], (int) offsetTop, (int) endPosition[0], (int) bottom));
             }
 
-            final Rect categoryRect = categoryRects.get(i);
+            final Rect categoryRect = rects.get(i);
 
             if (!initialRun) {
+                // Every run adjust categories width
                 categoryRect.set((int) startPosition[0], categoryRect.top, (int) endPosition[0], categoryRect.bottom);
             }
 
+            if (currentCategory > categoriesCount - 1) {
+                currentCategory = 0;
+            }
+
             if (isInBounds(viewPortHandler, left, right, categoryRect.left, categoryRect.right)) {
-                if (currentCategory >= categoriesCount - 1) {
-                    currentCategory = 0;
-                }
 
                 activeCalendarDate.setTime(config.getActiveDate());
                 activeCalendarDate.add(Calendar.DATE, i/categoriesCount);
@@ -105,8 +107,9 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
                     drawCategory(canvas, categoryRect, date, category, config);
                 }
 
-                currentCategory++;
             }
+
+            currentCategory++;
         }
 
         canvas.restoreToCount(clipRestoreCount);
@@ -119,16 +122,10 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
 
         if (categoryName != null) {
             // draw text to the Canvas center
-            final Rect bounds = new Rect();
-            textPaint.getTextBounds(categoryName, 0, categoryName.length(), bounds);
-            final float x = categoryRect.left + (categoryRect.width() - bounds.width())/2;
-            final float y = categoryRect.top + (categoryRect.height() - bounds.height())/2;
-
-            canvas.drawText(categoryName, x, y, textPaint);
+            drawCenteredText(canvas, categoryName, categoryRect, config.getResourcesHolder().getCategoryTextPaint());
         }
 
         canvas.drawLine(categoryRect.left, categoryRect.top, categoryRect.left, categoryRect.bottom, config.getResourcesHolder().getCalendarGridPaint());
-
     }
 
     private void drawDefaultCategory(@NonNull Canvas canvas,@NonNull  Rect categoryRect, @NonNull Date date, @NonNull Category category, @NonNull Config config) {
@@ -138,15 +135,22 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
 
         final String categoryName = dateConverter.getValue(date, DefaultCategoryDateConverter.Type.SHORT);
 
-        // draw text to the Canvas center
-        Rect bounds = new Rect();
-        textPaint.getTextBounds(categoryName, 0, categoryName.length(), bounds);
-        final float x = categoryRect.left + (categoryRect.width() - bounds.width())/2;
-        final float y = categoryRect.top + (categoryRect.height() - bounds.height())/2;
-
-        canvas.drawText(categoryName, x, y, textPaint);
-
+        drawCenteredText(canvas, categoryName, categoryRect, config.getResourcesHolder().getCategoryTextPaint());
         canvas.drawLine(categoryRect.left, categoryRect.top, categoryRect.left, categoryRect.bottom, config.getResourcesHolder().getCalendarGridPaint());
+    }
+
+    private void drawCenteredText(@NonNull Canvas canvas, @NonNull String text, @NonNull Rect areaRect, @NonNull Paint textPaint) {
+        RectF bounds = new RectF(areaRect);
+        // measure text width
+        bounds.right = textPaint.measureText(text, 0, text.length());
+        // measure text height
+        bounds.bottom = textPaint.descent() - textPaint.ascent();
+
+        bounds.left += (areaRect.width() - bounds.right) / 2.0f;
+        bounds.top += (areaRect.height() - bounds.bottom) / 2.0f;
+
+        //TODO clip canvas
+        canvas.drawText(text, bounds.left, bounds.top - textPaint.ascent(), textPaint);
     }
 
     private boolean isInBounds(@NonNull ViewPortHandler viewPortHandler, float left, float right, float startX, float endX) {
@@ -155,6 +159,5 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
         }
 
         return viewPortHandler.isInBoundsX(startX) || viewPortHandler.isInBoundsX(endX) || (startX <= left && endX >= right);
-
     }
 }
