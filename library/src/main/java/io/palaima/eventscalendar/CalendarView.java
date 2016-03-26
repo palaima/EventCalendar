@@ -18,6 +18,7 @@ import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import java.util.Calendar;
 import java.util.List;
 
 import io.palaima.eventscalendar.data.CalendarEvent;
@@ -30,6 +31,7 @@ import io.palaima.eventscalendar.renderer.DefaultCategoryRenderer;
 import io.palaima.eventscalendar.renderer.DefaultGridRenderer;
 import io.palaima.eventscalendar.renderer.DefaultTimeScaleRenderer;
 import io.palaima.eventscalendar.renderer.GridRenderer;
+import io.palaima.eventscalendar.renderer.TimeIndicatorRenderer;
 import io.palaima.eventscalendar.renderer.TimeScaleRenderer;
 
 public class CalendarView extends ViewGroup implements CalendarInterface {
@@ -64,6 +66,8 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
     private TimeScaleRenderer timeScaleRenderer;
 
     private CategoryRenderer categoryRenderer;
+
+    private TimeIndicatorRenderer timeIndicatorRenderer;
 
     private float cellHeight;
 
@@ -111,6 +115,7 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
 
         gridRenderer = new DefaultGridRenderer();
         timeScaleRenderer = new DefaultTimeScaleRenderer();
+        timeIndicatorRenderer = new TimeIndicatorRenderer();
         categoryRenderer = new DefaultCategoryRenderer();
         circleRenderer = new CircleRenderer(viewPortHandler, transformer, config.getResourcesHolder());
 
@@ -140,10 +145,6 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
 
         if (timeScaleRenderer != null && config.isTimeScaleEnabled()) {
             timeScaleRenderer.renderTimeScale(canvas, config, viewPortHandler, transformer);
-        }
-
-        if (categoryRenderer != null && config.isCategoriesEnabled()) {
-            categoryRenderer.renderCategories(canvas, config, viewPortHandler, transformer);
         }
 
         // make sure the graph values and grid cannot be drawn outside the
@@ -188,6 +189,25 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
 
         // Removes clipping rectangle
         canvas.restoreToCount(clipRestoreCount);
+
+        if (timeIndicatorRenderer != null && config.isTimeIndicatorEnabled()) {
+
+            Calendar active = Calendar.getInstance();
+            active.setTime(config.getActiveDate());
+            Calendar today = config.getToday();
+
+            boolean isToday = today.get(Calendar.YEAR) == active.get(Calendar.YEAR)
+                && today.get(Calendar.DAY_OF_YEAR) == active.get(Calendar.DAY_OF_YEAR);
+
+            if (isToday) {
+                timeIndicatorRenderer.setDate(Calendar.getInstance());
+                timeIndicatorRenderer.renderTimeIndicator(canvas, config, viewPortHandler, transformer);
+            }
+        }
+
+        if (categoryRenderer != null && config.isCategoriesEnabled()) {
+            categoryRenderer.renderCategories(canvas, config, viewPortHandler, transformer);
+        }
 
         if (properties.isLogEnabled()) {
             long drawTime = (System.currentTimeMillis() - startTime);

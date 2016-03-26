@@ -151,8 +151,12 @@ public class DefaultCategoryRenderer extends CategoryRenderer {
         textBounds.left += (areaRect.width() - textBounds.right) / 2.0f;
         textBounds.top += (areaRect.height() - textBounds.bottom) / 2.0f;
 
-        //TODO clip canvas
+        int clipRestoreCount = canvas.save();
+        canvas.clipRect(areaRect);
+
         canvas.drawText(text, textBounds.left, textBounds.top - textPaint.ascent(), textPaint);
+
+        canvas.restoreToCount(clipRestoreCount);
     }
 
     private boolean isInBounds(@NonNull ViewPortHandler viewPortHandler, float left, float right, float startX, float endX) {

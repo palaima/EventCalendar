@@ -57,7 +57,7 @@ public final class DefaultTimeScaleRenderer extends TimeScaleRenderer {
 
                 if (minutes % 60 == 0) {
                     float hours = (minutes / 60);
-                    String s = defaultTimeConverter.interpretTime((int) hours, DefaultTimeConverter.Type.HOUR_24);
+                    String s = defaultTimeConverter.interpretHour((int) hours, DefaultTimeConverter.Type.HOUR_24);
                     drawTextCentred(canvas, config.getResourcesHolder().getTimeScaleTextPaint(), s, width/2 + offsetLeft, position[1]);
                 }
 

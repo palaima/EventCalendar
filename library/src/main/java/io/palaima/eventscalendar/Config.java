@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -33,7 +34,7 @@ public class Config {
 
     private boolean drawGridBackground = true;
 
-    private boolean drawBorders = true;
+    private boolean drawBorders = false;
 
     private List<CalendarEvent> calendarEvents = new ArrayList<>();
 
@@ -69,6 +70,12 @@ public class Config {
     private float maxZoomOutHours = 8;
 
     private Date activeDate = new Date();
+
+    private Calendar today = Calendar.getInstance();
+
+    private boolean timeIndicatorEnabled = true;
+
+    private float timeIndicatorHeight = 24;
 
     private Config() {
 
@@ -172,6 +179,18 @@ public class Config {
 
     public float getMaxZoomOutHours() {
         return maxZoomOutHours;
+    }
+
+    public boolean isTimeIndicatorEnabled() {
+        return timeIndicatorEnabled;
+    }
+
+    public float getTimeIndicatorHeight() {
+        return timeIndicatorHeight;
+    }
+
+    public Calendar getToday() {
+        return today;
     }
 
     public int getDaysCount() {
