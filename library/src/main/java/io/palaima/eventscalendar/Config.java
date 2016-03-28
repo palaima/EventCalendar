@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.palaima.eventscalendar.data.CalendarEvent;
 import io.palaima.eventscalendar.data.Category;
@@ -36,9 +38,11 @@ public class Config {
 
     private boolean drawBorders = false;
 
-    private List<CalendarEvent> calendarEvents = new ArrayList<>();
+    private List<? extends CalendarEvent> calendarEvents = new ArrayList<>();
 
     private List<? extends Category> categories = Collections.singletonList(DefaultCategory.INSTANCE);
+
+    private Map<Date, Map<Long, List<CalendarEvent>>> eventsMap = new HashMap<>();
 
     /**
      * text that is displayed when the chart is empty
@@ -129,7 +133,7 @@ public class Config {
         return drawGridBackground;
     }
 
-    public List<CalendarEvent> getCalendarEvents() {
+    public List<? extends CalendarEvent> getCalendarEvents() {
         return calendarEvents;
     }
 
@@ -208,6 +212,16 @@ public class Config {
         return activeDate;
     }
 
+    public List<CalendarEvent> getEventsBy(Date date, Category category) {
+        if (eventsMap.containsKey(date)) {
+            if (eventsMap.get(date).containsKey(category.getId())) {
+                return eventsMap.get(date).get(category.getId());
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
     public ResourcesHolder getResourcesHolder() {
         return resourcesHolder;
     }
@@ -231,8 +245,8 @@ public class Config {
         private List<? extends Category> categories;
         private String noDataText;
         private String noDataTextDescription;
+        private Date activeDate;
         private ResourcesHolder resourcesHolder;
-
 
         public Builder(@NonNull CalendarView calendarView, @NonNull Config config) {
             this.calendarView = calendarView;
@@ -249,12 +263,12 @@ public class Config {
             extraBottomOffset = config.extraBottomOffset;
             drawGridBackground = config.drawGridBackground;
             drawBorders = config.drawBorders;
-            calendarEvents = config.calendarEvents;
+            calendarEvents = Collections.unmodifiableList(config.calendarEvents);
             noDataText = config.noDataText;
             noDataTextDescription = config.noDataTextDescription;
+            activeDate = config.activeDate;
             resourcesHolder = config.resourcesHolder;
         }
-
 
         public CalendarView set() {
             calendarView.setConfig(build());
@@ -267,7 +281,7 @@ public class Config {
             Config config = new Config();
             config.resourcesHolder = resourcesHolder;
             config.mode = mode;
-            config.categories = Collections.unmodifiableList(categories);
+            config.categories = categories;
             config.startHour = startHour;
             config.endHour = endHour;
             config.minOffset = minOffset;
@@ -277,9 +291,34 @@ public class Config {
             config.extraBottomOffset = extraBottomOffset;
             config.drawGridBackground = drawGridBackground;
             config.drawBorders = drawBorders;
-            config.calendarEvents = Collections.unmodifiableList(calendarEvents);
+            config.calendarEvents = calendarEvents;
             config.noDataText = noDataText;
             config.noDataTextDescription = noDataTextDescription;
+            config.activeDate = activeDate;
+
+            Map<Date, Map<Long, List<CalendarEvent>>> eventsMap = new HashMap<>();
+
+            for (CalendarEvent event : calendarEvents) {
+
+                Date start = DateHelper.startOfTheDay(event.getStart());
+
+                if (!eventsMap.containsKey(start)) {
+                    eventsMap.put(start, new HashMap<Long, List<CalendarEvent>>());
+                }
+
+                if (!eventsMap.get(start).containsKey(event.getCategoryId())) {
+                    eventsMap.get(start).put(event.getCategoryId(), new ArrayList<CalendarEvent>());
+                }
+
+                if (eventsMap.containsKey(start)) {
+                    if (eventsMap.get(start).containsKey(event.getCategoryId())) {
+                        eventsMap.get(start).get(event.getCategoryId()).add(event);
+                    }
+                }
+            }
+
+            config.eventsMap = Collections.unmodifiableMap(eventsMap);
+
             return config;
         }
 
@@ -311,6 +350,11 @@ public class Config {
 
         public Config.Builder endHour(float hour) {
             this.endHour = hour;
+            return this;
+        }
+
+        public Config.Builder activeDate(@NonNull Date date) {
+            activeDate = date;
             return this;
         }
 
@@ -376,13 +420,12 @@ public class Config {
             return this;
         }
 
-        public Config.Builder events(List<CalendarEvent> events) {
+        public Config.Builder events(List<? extends CalendarEvent> events) {
             if (events == null) {
                 events = new ArrayList<>();
-            } else {
-                events = new ArrayList<>(events);
             }
-            this.calendarEvents = events;
+
+            this.calendarEvents = Collections.unmodifiableList(events);
             return this;
         }
 

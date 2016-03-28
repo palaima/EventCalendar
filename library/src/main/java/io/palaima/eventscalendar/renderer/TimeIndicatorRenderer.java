@@ -33,10 +33,10 @@ public class TimeIndicatorRenderer implements Renderer {
     private Calendar calendar;
 
     public void renderTimeIndicator(
-        Canvas canvas,
-        Config config,
-        ViewPortHandler viewPortHandler,
-        Transformer transformer
+        @NonNull Canvas canvas,
+        @NonNull Config config,
+        @NonNull ViewPortHandler viewPortHandler,
+        @NonNull Transformer transformer
     ) {
 
         final float offsetTop = config.getResourcesHolder().dpToPx(Math.max(config.getMinOffset(), config.getExtraTopOffset()));

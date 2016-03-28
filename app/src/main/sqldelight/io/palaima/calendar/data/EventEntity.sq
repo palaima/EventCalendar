@@ -2,13 +2,18 @@ CREATE TABLE calendar_event (
   _id LONG NOT NULL PRIMARY KEY AUTOINCREMENT,
   title STRING NOT NULL,
   description STRING NOT NULL,
+  categoryId LONG NOT NULL,
   startDate CLASS('java.util.Calendar') NOT NULL,
   endDate CLASS('java.util.Calendar') NOT NULL
 );
 
 -- Further SQL statements are proceeded by an identifier. This will be used to name the constant
 -- in the generated Java code.
-select_by__id:
+select_all:
+SELECT *
+FROM calendar_event;
+
+select_by_id:
 SELECT *
 FROM calendar_event
 WHERE _id = ?;

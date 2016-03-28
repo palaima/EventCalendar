@@ -10,8 +10,8 @@ public abstract class EventEntity implements EventEntityModel {
     private static final DateAdapter DATE_ADAPTER = new DateAdapter();
 
     public static final Mapper<EventEntity> MAPPER = new Mapper<>(new Mapper.Creator<EventEntity>() {
-        @Override public EventEntity create(long _id, String title, String description, Calendar startDate, Calendar endDate) {
-            return new AutoValue_EventEntity(_id, title, description, startDate, endDate);
+        @Override public EventEntity create(long _id, String title, String description, long categoryId, Calendar startDate, Calendar endDate) {
+            return new AutoValue_EventEntity(_id, title, description, categoryId, startDate, endDate);
         }
     }, DATE_ADAPTER, DATE_ADAPTER);
 

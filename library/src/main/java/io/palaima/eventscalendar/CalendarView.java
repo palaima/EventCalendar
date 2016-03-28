@@ -28,6 +28,7 @@ import io.palaima.eventscalendar.listener.OnChartGestureListener;
 import io.palaima.eventscalendar.renderer.CategoryRenderer;
 import io.palaima.eventscalendar.renderer.CircleRenderer;
 import io.palaima.eventscalendar.renderer.DefaultCategoryRenderer;
+import io.palaima.eventscalendar.renderer.DefaultEventRenderer;
 import io.palaima.eventscalendar.renderer.DefaultGridRenderer;
 import io.palaima.eventscalendar.renderer.DefaultTimeScaleRenderer;
 import io.palaima.eventscalendar.renderer.GridRenderer;
@@ -68,6 +69,8 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
     private CategoryRenderer categoryRenderer;
 
     private TimeIndicatorRenderer timeIndicatorRenderer;
+
+    private DefaultEventRenderer eventRenderer;
 
     private float cellHeight;
 
@@ -117,6 +120,7 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
         timeScaleRenderer = new DefaultTimeScaleRenderer();
         timeIndicatorRenderer = new TimeIndicatorRenderer();
         categoryRenderer = new DefaultCategoryRenderer();
+        eventRenderer = new DefaultEventRenderer();
         circleRenderer = new CircleRenderer(viewPortHandler, transformer, config.getResourcesHolder());
 
         calcMinMax();
@@ -187,6 +191,10 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
 
         circleRenderer.renderCircle(canvas);
 
+        if (!config.getCalendarEvents().isEmpty()) {
+            eventRenderer.renderCategories(canvas, config, viewPortHandler, transformer);
+        }
+
         // Removes clipping rectangle
         canvas.restoreToCount(clipRestoreCount);
 
@@ -196,10 +204,7 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
             active.setTime(config.getActiveDate());
             Calendar today = config.getToday();
 
-            boolean isToday = today.get(Calendar.YEAR) == active.get(Calendar.YEAR)
-                && today.get(Calendar.DAY_OF_YEAR) == active.get(Calendar.DAY_OF_YEAR);
-
-            if (isToday) {
+            if (DateHelper.isSameDay(today, active)) {
                 timeIndicatorRenderer.setDate(Calendar.getInstance());
                 timeIndicatorRenderer.renderTimeIndicator(canvas, config, viewPortHandler, transformer);
             }
@@ -341,7 +346,7 @@ public class CalendarView extends ViewGroup implements CalendarInterface {
 
     public void notifyDataSetChanged() {
 
-        List<CalendarEvent> calendarEvents = config.getCalendarEvents();
+        List<? extends CalendarEvent> calendarEvents = config.getCalendarEvents();
 
         if (calendarEvents == null || calendarEvents.isEmpty()) {
             if (properties.isLogEnabled())

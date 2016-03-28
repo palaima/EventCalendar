@@ -15,12 +15,32 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
     private final long fullDuration;
     private final long startMillis;
     private final long endMillis;
+    private final long categoryId;
 
-    protected CalendarEvent(@NonNull Date startTime, @NonNull Date endTime) {
+    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.startMillis = startTime.getTime();
         this.endMillis = endTime.getTime();
+        this.categoryId = DEFAULT_CATEGORY_ID;
+        this.fullDuration = endMillis - startMillis;
+    }
+
+    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime, long categoryId) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.startMillis = startTime.getTime();
+        this.endMillis = endTime.getTime();
+        this.categoryId = categoryId;
+        this.fullDuration = endMillis - startMillis;
+    }
+
+    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime, @NonNull Category category) {
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.startMillis = startTime.getTime();
+        this.endMillis = endTime.getTime();
+        this.categoryId = category.getId();
         this.fullDuration = endMillis - startMillis;
     }
 
@@ -43,7 +63,7 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
     }
 
     public long getCategoryId() {
-        return DEFAULT_CATEGORY_ID;
+        return categoryId;
     }
 
     /**

@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.FrameLayout;
 
 import java.util.Collections;
 
+import butterknife.ButterKnife;
 import io.palaima.debugdrawer.DebugDrawer;
 import io.palaima.debugdrawer.actions.ActionsModule;
 import io.palaima.debugdrawer.commons.BuildModule;
@@ -31,6 +33,11 @@ public class TestCalendarActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test_calendar);
+
+        ButterKnife.bind(this);
+
+        Toolbar toolbar = ButterKnife.findById(this, R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         calendarView = ((CalendarView) findViewById(R.id.calendar_view));
         bottomSheet = ((FrameLayout) findViewById(R.id.bottom_sheet));
