@@ -1,15 +1,16 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 apply plugin: 'com.neenbedankt.android-apt'
 apply plugin: 'com.squareup.sqldelight'
 
 android {
-    compileSdkVersion 'Google Inc.:Google APIs:23'
-    buildToolsVersion "23.0.2"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.1"
 
     defaultConfig {
         applicationId "io.palaima.calendar"
         minSdkVersion 19
-        targetSdkVersion 23
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -19,13 +20,20 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    dexOptions {
+        preDexLibraries = false
+        jumboMode = false
+        javaMaxHeapSize "4g"
+    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.2.0'
-    compile 'com.android.support:design:23.2.0'
+    compile 'com.android.support:appcompat-v7:24.2.0'
+    compile 'com.android.support:design:24.2.0'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.3"
     compile project(':chart')
     compile project(':library')
 
@@ -35,22 +43,23 @@ dependencies {
 
     provided 'javax.annotation:jsr250-api:1.0'
     provided 'com.google.auto.value:auto-value:1.2-rc1'
-    apt 'com.google.auto.value:auto-value:1.2-rc1'
+    kapt 'com.google.auto.value:auto-value:1.2-rc1'
     provided 'com.gabrielittner.auto.value:auto-value-cursor-annotations:0.2.0'
-    apt 'com.gabrielittner.auto.value:auto-value-cursor:0.2.0'
+    kapt 'com.gabrielittner.auto.value:auto-value-cursor:0.2.0'
 
     compile 'com.squareup.sqlbrite:sqlbrite:0.6.2'
 
-    compile 'io.reactivex:rxjava:1.1.2'
-    compile 'io.reactivex:rxandroid:1.1.0'
+    compile 'io.reactivex:rxjava:1.1.9'
+    compile 'io.reactivex:rxandroid:1.2.0'
 
     compile('com.github.afollestad.material-dialogs:core:0.8.5.7@aar') {
         transitive = true
     }
     compile 'com.github.clans:fab:1.6.2'
 
-    compile 'com.jakewharton:butterknife:7.0.1'
-    compile 'com.jakewharton.timber:timber:4.1.1'
+    compile 'com.jakewharton:butterknife:8.0.1'
+    kapt 'com.jakewharton:butterknife-compiler:8.0.1'
+    compile 'com.jakewharton.timber:timber:4.3.0'
 
     compile 'com.github.Kennyc1012:BottomSheet:2.1.1'
     compile 'com.wdullaer:materialdatetimepicker:2.3.0'

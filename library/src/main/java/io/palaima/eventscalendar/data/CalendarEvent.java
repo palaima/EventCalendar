@@ -6,7 +6,7 @@ import android.support.annotation.NonNull;
 
 import java.util.Date;
 
-public abstract class CalendarEvent implements Comparable<CalendarEvent> {
+public abstract class CalendarEvent<T> implements Comparable<CalendarEvent<T>>, Cloneable {
 
     public static final int DEFAULT_CATEGORY_ID = 1;
 
@@ -16,8 +16,10 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
     private final long startMillis;
     private final long endMillis;
     private final long categoryId;
+    private final T value;
 
-    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime) {
+    public CalendarEvent(@NonNull T value, @NonNull Date startTime, @NonNull Date endTime) {
+        this.value = value;
         this.startTime = startTime;
         this.endTime = endTime;
         this.startMillis = startTime.getTime();
@@ -26,7 +28,8 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
         this.fullDuration = endMillis - startMillis;
     }
 
-    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime, long categoryId) {
+    public CalendarEvent(@NonNull T value, @NonNull Date startTime, @NonNull Date endTime, long categoryId) {
+        this.value = value;
         this.startTime = startTime;
         this.endTime = endTime;
         this.startMillis = startTime.getTime();
@@ -35,7 +38,8 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
         this.fullDuration = endMillis - startMillis;
     }
 
-    public CalendarEvent(@NonNull Date startTime, @NonNull Date endTime, @NonNull Category category) {
+    public CalendarEvent(@NonNull T value, @NonNull Date startTime, @NonNull Date endTime, @NonNull Category category) {
+        this.value = value;
         this.startTime = startTime;
         this.endTime = endTime;
         this.startMillis = startTime.getTime();
@@ -66,6 +70,10 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
         return categoryId;
     }
 
+    public T getValue() {
+        return value;
+    }
+
     /**
      * @return duration in millis
      */
@@ -82,4 +90,27 @@ public abstract class CalendarEvent implements Comparable<CalendarEvent> {
         }
     }
 
+    @Override public String toString() {
+        return "CalendarEvent{" +
+            "startTime=" + startTime +
+            ", endTime=" + endTime +
+            ", fullDuration=" + fullDuration +
+            ", startMillis=" + startMillis +
+            ", endMillis=" + endMillis +
+            ", categoryId=" + categoryId +
+            ", value=" + value +
+            '}';
+    }
+
+    /* @Override public Object clone() {
+        try {
+            CalendarEvent clone = (CalendarEvent) super.clone();
+            clone.startTime = (Date) startTime.clone();
+            clone.endTime = (Date) endTime.clone();
+            clone.startMillis = startMillis.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError(e);
+        }
+    }*/
 }

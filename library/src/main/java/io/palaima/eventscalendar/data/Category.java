@@ -4,7 +4,7 @@ import android.support.annotation.Nullable;
 
 public interface Category {
 
-    int DEFAULT_ID = -1;
+    long DEFAULT_ID = -1;
 
     long getId();
 

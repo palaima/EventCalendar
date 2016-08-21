@@ -2,18 +2,18 @@ package io.palaima.eventscalendar;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.SparseArray;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.palaima.eventscalendar.data.CalendarEvent;
 import io.palaima.eventscalendar.data.Category;
 import io.palaima.eventscalendar.data.DefaultCategory;
+import io.palaima.eventscalendar.data.EventRect;
 
 public class Config {
 
@@ -42,7 +42,7 @@ public class Config {
 
     private List<? extends Category> categories = Collections.singletonList(DefaultCategory.INSTANCE);
 
-    private Map<Date, Map<Long, List<CalendarEvent>>> eventsMap = new HashMap<>();
+    private SparseArray<SparseArray<List<EventRect>>> eventsMap = new SparseArray<>();
 
     /**
      * text that is displayed when the chart is empty
@@ -212,11 +212,10 @@ public class Config {
         return activeDate;
     }
 
-    public List<CalendarEvent> getEventsBy(Date date, Category category) {
-        if (eventsMap.containsKey(date)) {
-            if (eventsMap.get(date).containsKey(category.getId())) {
-                return eventsMap.get(date).get(category.getId());
-            }
+    public List<EventRect> getEventsBy(Date date, Category category) {
+        int key = date.hashCode();
+        if (eventsMap.get(key) != null && eventsMap.get(key).get(((int) category.getId())) != null) {
+            return eventsMap.get(key).get(((int) category.getId()));
         }
 
         return Collections.emptyList();
@@ -241,7 +240,7 @@ public class Config {
         private float extraTopOffset, extraRightOffset, extraBottomOffset, extraLeftOffset;
         private boolean drawGridBackground;
         private boolean drawBorders;
-        private List<CalendarEvent> calendarEvents;
+        private List<? extends CalendarEvent> calendarEvents;
         private List<? extends Category> categories;
         private String noDataText;
         private String noDataTextDescription;
@@ -263,7 +262,7 @@ public class Config {
             extraBottomOffset = config.extraBottomOffset;
             drawGridBackground = config.drawGridBackground;
             drawBorders = config.drawBorders;
-            calendarEvents = Collections.unmodifiableList(config.calendarEvents);
+            calendarEvents = new ArrayList<>(config.calendarEvents);
             noDataText = config.noDataText;
             noDataTextDescription = config.noDataTextDescription;
             activeDate = config.activeDate;
@@ -281,7 +280,7 @@ public class Config {
             Config config = new Config();
             config.resourcesHolder = resourcesHolder;
             config.mode = mode;
-            config.categories = categories;
+            config.categories = Collections.unmodifiableList(categories);
             config.startHour = startHour;
             config.endHour = endHour;
             config.minOffset = minOffset;
@@ -291,33 +290,42 @@ public class Config {
             config.extraBottomOffset = extraBottomOffset;
             config.drawGridBackground = drawGridBackground;
             config.drawBorders = drawBorders;
-            config.calendarEvents = calendarEvents;
+            config.calendarEvents = Collections.unmodifiableList(calendarEvents);
             config.noDataText = noDataText;
             config.noDataTextDescription = noDataTextDescription;
             config.activeDate = activeDate;
 
-            Map<Date, Map<Long, List<CalendarEvent>>> eventsMap = new HashMap<>();
+            SparseArray<SparseArray<List<EventRect>>> eventsMap = new SparseArray<>();
 
-            for (CalendarEvent event : calendarEvents) {
+            List<EventRect> eventRects = sortAndCacheEvents(calendarEvents);
 
-                Date start = DateHelper.startOfTheDay(event.getStart());
+            if (!eventRects.isEmpty()) {
 
-                if (!eventsMap.containsKey(start)) {
-                    eventsMap.put(start, new HashMap<Long, List<CalendarEvent>>());
-                }
+                for (EventRect eventRect : eventRects) {
 
-                if (!eventsMap.get(start).containsKey(event.getCategoryId())) {
-                    eventsMap.get(start).put(event.getCategoryId(), new ArrayList<CalendarEvent>());
-                }
+                    CalendarEvent event = eventRect.event;
 
-                if (eventsMap.containsKey(start)) {
-                    if (eventsMap.get(start).containsKey(event.getCategoryId())) {
-                        eventsMap.get(start).get(event.getCategoryId()).add(event);
+                    Date start = DateHelper.startOfTheDay(event.getStart());
+
+                    int key = start.hashCode();
+                    if (eventsMap.get(key) == null) {
+                        eventsMap.put(key, new SparseArray<List<EventRect>>());
+                    }
+
+                    if (eventsMap.get(key).get(((int) event.getCategoryId())) == null) {
+                        eventsMap.get(key).put(((int) event.getCategoryId()), new ArrayList<EventRect>());
+                    }
+
+                    if (eventsMap.get(key) != null) {
+                        if (eventsMap.get(key).get(((int) event.getCategoryId())) != null) {
+                            eventsMap.get(key).get(((int) event.getCategoryId())).add(eventRect);
+                        }
                     }
                 }
+
             }
 
-            config.eventsMap = Collections.unmodifiableMap(eventsMap);
+            config.eventsMap = eventsMap;
 
             return config;
         }
@@ -425,15 +433,7 @@ public class Config {
                 events = new ArrayList<>();
             }
 
-            this.calendarEvents = Collections.unmodifiableList(events);
-            return this;
-        }
-
-        public Config.Builder addEvents(List<? extends CalendarEvent> events) {
-            if (events == null) {
-                events = new ArrayList<>();
-            }
-            this.calendarEvents.addAll(events);
+            this.calendarEvents = events;
             return this;
         }
 
@@ -462,6 +462,188 @@ public class Config {
             if (startHour >= endHour) {
                 throw new IllegalArgumentException("start hour cannot be equal or greater than end hour");
             }
+        }
+
+        /**
+         * Sort and cache events.
+         * @param events The events to be sorted and cached.
+         */
+        private List<EventRect> sortAndCacheEvents(List<? extends CalendarEvent> events) {
+            if (events.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            Collections.sort(events);
+            List<EventRect> eventRects = new ArrayList<>();
+            for (CalendarEvent event : events) {
+                eventRects.add(cacheEvent(event));
+            }
+
+            return computePositionOfEvents(eventRects);
+        }
+
+        /**
+         * Cache the event for smooth scrolling functionality.
+         * @param event The event to cache.
+         */
+        private EventRect cacheEvent(CalendarEvent event) {
+            if (event.getStartMillis() >= event.getEndMillis()) {
+                throw new IllegalStateException("start cannot be after end time");
+            }
+
+            if (!DateHelper.isSameDay(event.getStart(), event.getEnd())) {
+                throw new IllegalStateException("events passing several days is not supported");
+                // Add first day.
+            /*Calendar endTime = (Calendar) activeCalendarDate.clone();
+            endTime.setTime(event.getStart());
+            endTime.set(Calendar.HOUR_OF_DAY, 23);
+            endTime.set(Calendar.MINUTE, 59);
+            event.clone();
+            WeekViewEvent event1 = new WeekViewEvent(event.getId(), event.getName(), event.getLocation(), event.getStartTime(), endTime);
+            event1.setColor(event.getColor());
+            eventsRect.add(new EventRect(event1, event));
+
+            // Add other days.
+            Calendar otherDay = (Calendar) event.getStartTime().clone();
+            otherDay.add(Calendar.DATE, 1);
+            while (!isSameDay(otherDay, event.getEndTime())) {
+                Calendar overDay = (Calendar) otherDay.clone();
+                overDay.set(Calendar.HOUR_OF_DAY, 0);
+                overDay.set(Calendar.MINUTE, 0);
+                Calendar endOfOverDay = (Calendar) overDay.clone();
+                endOfOverDay.set(Calendar.HOUR_OF_DAY, 23);
+                endOfOverDay.set(Calendar.MINUTE, 59);
+                WeekViewEvent eventMore = new WeekViewEvent(event.getId(), event.getName(), overDay, endOfOverDay);
+                eventMore.setColor(event.getColor());
+                eventsRect.add(new EventRect(eventMore, event, null));
+
+                // Add next day.
+                otherDay.add(Calendar.DATE, 1);
+            }
+
+            // Add last day.
+            Calendar startTime = (Calendar) event.getEndTime().clone();
+            startTime.set(Calendar.HOUR_OF_DAY, 0);
+            startTime.set(Calendar.MINUTE, 0);
+            WeekViewEvent event2 = new WeekViewEvent(event.getId(), event.getName(), event.getLocation(), startTime, event.getEndTime());
+            event2.setColor(event.getColor());
+            eventsRect.add(new EventRect(event2, event));*/
+            } else {
+                return new EventRect(event, event);
+            }
+        }
+
+        /**
+         * Calculates the left and right positions of each events. This comes handy specially if events
+         * are overlapping.
+         * @param eventRects The events along with their wrapper class.
+         */
+        private List<EventRect> computePositionOfEvents(List<EventRect> eventRects) {
+            if (eventRects.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<EventRect> eventRectsSorted = new ArrayList<>();
+
+
+            // Make "collision groups" for all events that collide with others.
+            List<List<EventRect>> collisionGroups = new ArrayList<List<EventRect>>();
+            for (EventRect eventRect : eventRects) {
+                boolean isPlaced = false;
+                outerLoop:
+                for (List<EventRect> collisionGroup : collisionGroups) {
+                    for (EventRect groupEvent : collisionGroup) {
+                        if (isEventsCollide(groupEvent.event, eventRect.event)) {
+                            collisionGroup.add(eventRect);
+                            isPlaced = true;
+                            break outerLoop;
+                        }
+                    }
+                }
+                if (!isPlaced) {
+                    List<EventRect> newGroup = new ArrayList<EventRect>();
+                    newGroup.add(eventRect);
+                    collisionGroups.add(newGroup);
+                }
+            }
+
+            for (List<EventRect> collisionGroup : collisionGroups) {
+                eventRectsSorted.addAll(expandEventsToMaxWidth(collisionGroup));
+            }
+
+            return eventRectsSorted;
+        }
+
+        /**
+         * Expands all the events to maximum possible width. The events will try to occupy maximum
+         * space available horizontally.
+         * @param collisionGroup The group of events which overlap with each other.
+         */
+        private List<EventRect> expandEventsToMaxWidth(List<EventRect> collisionGroup) {
+            if (collisionGroup.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<EventRect> eventRects = new ArrayList<>();
+            // Expand the events to maximum possible width.
+            List<List<EventRect>> columns = new ArrayList<>();
+            columns.add(new ArrayList<EventRect>());
+            for (EventRect eventRect : collisionGroup) {
+                boolean isPlaced = false;
+                for (List<EventRect> column : columns) {
+                    if (column.size() == 0) {
+                        column.add(eventRect);
+                        isPlaced = true;
+                    }
+                    else if (!isEventsCollide(eventRect.event, column.get(column.size()-1).event)) {
+                        column.add(eventRect);
+                        isPlaced = true;
+                        break;
+                    }
+                }
+                if (!isPlaced) {
+                    List<EventRect> newColumn = new ArrayList<EventRect>();
+                    newColumn.add(eventRect);
+                    columns.add(newColumn);
+                }
+            }
+
+
+            // Calculate left and right position for all the events.
+            // Get the maxRowCount by looking in all columns.
+            int maxRowCount = 0;
+            for (List<EventRect> column : columns){
+                maxRowCount = Math.max(maxRowCount, column.size());
+            }
+            for (int i = 0; i < maxRowCount; i++) {
+                // Set the left and right values of the event.
+                float j = 0;
+                for (List<EventRect> column : columns) {
+                    if (column.size() >= i+1) {
+                        EventRect eventRect = column.get(i);
+                        eventRect.startWidthCoef = j / columns.size();
+                        eventRect.endWidthCoef = 1f / columns.size();
+                        eventRects.add(eventRect);
+                    }
+                    j++;
+                }
+            }
+
+            return eventRects;
+        }
+
+        /**
+         * Checks if two events overlap.
+         * @param event1 The first event.
+         * @param event2 The second event.
+         * @return true if the events overlap.
+         */
+        private boolean isEventsCollide(CalendarEvent event1, CalendarEvent event2) {
+            long start1 = event1.getStartMillis();
+            long end1 = event1.getEndMillis();
+            long start2 = event2.getStartMillis();
+            long end2 = event2.getEndMillis();
+            return !((start1 >= end2) || (end1 <= start2));
         }
     }
 }

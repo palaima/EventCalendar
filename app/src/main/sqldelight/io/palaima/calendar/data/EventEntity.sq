@@ -1,10 +1,10 @@
 CREATE TABLE calendar_event (
-  _id LONG NOT NULL PRIMARY KEY AUTOINCREMENT,
-  title STRING NOT NULL,
-  description STRING NOT NULL,
-  categoryId LONG NOT NULL,
-  startDate CLASS('java.util.Calendar') NOT NULL,
-  endDate CLASS('java.util.Calendar') NOT NULL
+  _id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  categoryId INTEGER NOT NULL,
+  startDate INTEGER NOT NULL,
+  endDate INTEGER NOT NULL
 );
 
 -- Further SQL statements are proceeded by an identifier. This will be used to name the constant

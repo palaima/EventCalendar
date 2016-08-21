@@ -7,12 +7,12 @@ import android.support.annotation.NonNull;
 
 import java.util.Date;
 
-public class DefaultCalendarEvent extends CalendarEvent implements Clickable {
+public class DefaultCalendarEvent extends CalendarEvent<String> implements Clickable {
 
     private final Paint bgPaint;
 
-    public DefaultCalendarEvent(@NonNull Date startDate, @NonNull Date endDate) {
-        super(startDate, endDate);
+    public DefaultCalendarEvent(@NonNull String title, @NonNull Date startDate, @NonNull Date endDate) {
+        super(title, startDate, endDate);
 
         bgPaint = new Paint();
     }
