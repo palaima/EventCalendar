@@ -2,18 +2,18 @@ package io.palaima.calendar.data
 
 import io.palaima.eventscalendar.data.Category
 
-class MyCategory(private val id: Long, private val name: String) : Category {
+class CalendarCategory(private val id: Long, private val name: String) : Category {
 
     override fun getId(): Long {
         return id
     }
 
-    override fun getName(): String? {
+    override fun getName(): String {
         return name
     }
 
     override fun toString(): String {
-        return "MyCategory{" +
+        return "CalendarCategory{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 '}'
@@ -21,8 +21,8 @@ class MyCategory(private val id: Long, private val name: String) : Category {
 
     companion object {
 
-        fun from(categoryEntity: CategoryEntity): MyCategory {
-            return MyCategory(categoryEntity._id(), categoryEntity.name())
+        fun from(type: Type): CalendarCategory {
+            return CalendarCategory(type.id, type.name)
         }
     }
 }

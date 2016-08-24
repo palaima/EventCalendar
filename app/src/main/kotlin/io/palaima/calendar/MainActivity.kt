@@ -10,49 +10,49 @@ class MainActivity : AppCompatActivity(), OnChartValueSelectedListener {
 
     val mMonths = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec")
 
-    private var mChart: BarChart? = null
+    private lateinit var mChart: BarChart
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         mChart = findViewById(R.id.chart1) as BarChart
-        mChart!!.setOnChartValueSelectedListener(this)
+        mChart.setOnChartValueSelectedListener(this)
 
-        mChart!!.setDrawBarShadow(false)
-        mChart!!.setDrawValueAboveBar(true)
+        mChart.setDrawBarShadow(false)
+        mChart.setDrawValueAboveBar(true)
 
-        mChart!!.setDescription("")
+        mChart.setDescription("")
 
         // if more than 60 entries are displayed in the chart, no values will be
         // drawn
-        mChart!!.setMaxVisibleValueCount(60)
+        mChart.setMaxVisibleValueCount(60)
 
         // scaling can now only be done on x- and y-axis separately
-        mChart!!.setPinchZoom(true)
+        mChart.setPinchZoom(true)
 
-        mChart!!.setDrawGridBackground(true)
+        mChart.setDrawGridBackground(true)
 
-        val xAxis = mChart!!.xAxis
+        val xAxis = mChart.xAxis
         xAxis.position = XAxis.XAxisPosition.BOTTOM
         xAxis.setDrawGridLines(true)
         xAxis.spaceBetweenLabels = 2
 
         val custom = MyYAxisValueFormatter()
 
-        val leftAxis = mChart!!.axisLeft
+        val leftAxis = mChart.axisLeft
         leftAxis.setLabelCount(8, false)
         leftAxis.valueFormatter = custom
         leftAxis.setPosition(YAxis.YAxisLabelPosition.OUTSIDE_CHART)
         leftAxis.spaceTop = 15f
 
-        val rightAxis = mChart!!.axisRight
+        val rightAxis = mChart.axisRight
         rightAxis.setDrawGridLines(false)
         rightAxis.setLabelCount(8, false)
         rightAxis.valueFormatter = custom
         rightAxis.spaceTop = 15f
 
-        val l = mChart!!.legend
+        val l = mChart.legend
         l.position = Legend.LegendPosition.BELOW_CHART_LEFT
         l.form = Legend.LegendForm.SQUARE
         l.formSize = 9f
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity(), OnChartValueSelectedListener {
         val data = BarData(xVals, dataSets)
         data.setValueTextSize(10f)
 
-        mChart!!.data = data
+        mChart.data = data
     }
 
     override fun onValueSelected(e: Entry?, dataSetIndex: Int, h: Highlight) {
@@ -98,15 +98,15 @@ class MainActivity : AppCompatActivity(), OnChartValueSelectedListener {
         if (e == null)
             return
 
-        val bounds = mChart!!.getBarBounds(e as BarEntry?)
-        val position = mChart!!.getPosition(e, YAxis.AxisDependency.LEFT)
+        val bounds = mChart.getBarBounds(e as BarEntry?)
+        val position = mChart.getPosition(e, YAxis.AxisDependency.LEFT)
 
         Log.i("bounds", bounds.toString())
         Log.i("position", position.toString())
 
         Log.i("x-index",
-                "low: " + mChart!!.lowestVisibleXIndex + ", high: "
-                        + mChart!!.highestVisibleXIndex)
+                "low: " + mChart.lowestVisibleXIndex + ", high: "
+                        + mChart.highestVisibleXIndex)
     }
 
     override fun onNothingSelected() {

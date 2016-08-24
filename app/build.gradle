@@ -1,7 +1,23 @@
+buildscript {
+    //ext.kotlin_version = '1.0.3'
+    ext.kotlin_version = '1.0.4-eap-84'
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-dev' }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        //classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
+        classpath "io.realm:realm-gradle-plugin:1.2.0"
+    }
+}
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.neenbedankt.android-apt'
-apply plugin: 'com.squareup.sqldelight'
+apply plugin: 'kotlin-android-extensions'
+//apply plugin: 'com.neenbedankt.android-apt'
+apply plugin: 'realm-android'
 
 android {
     compileSdkVersion 24
@@ -26,6 +42,10 @@ android {
         jumboMode = false
         javaMaxHeapSize "4g"
     }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
 }
 
 dependencies {
@@ -33,21 +53,20 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.0'
     compile 'com.android.support:design:24.2.0'
-    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.3"
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+
     compile project(':chart')
     compile project(':library')
+
+    compile 'com.google.dagger:dagger:2.6'
+    kapt 'com.google.dagger:dagger-compiler:2.6'
+    provided 'org.glassfish:javax.annotation:10.0-b28'
 
     compile 'io.palaima.debugdrawer:debugdrawer:0.7.0'
     compile 'io.palaima.debugdrawer:debugdrawer-commons:0.7.0'
     compile 'io.palaima.debugdrawer:debugdrawer-actions:0.7.0'
-
-    provided 'javax.annotation:jsr250-api:1.0'
-    provided 'com.google.auto.value:auto-value:1.2-rc1'
-    kapt 'com.google.auto.value:auto-value:1.2-rc1'
-    provided 'com.gabrielittner.auto.value:auto-value-cursor-annotations:0.2.0'
-    kapt 'com.gabrielittner.auto.value:auto-value-cursor:0.2.0'
-
-    compile 'com.squareup.sqlbrite:sqlbrite:0.6.2'
 
     compile 'io.reactivex:rxjava:1.1.9'
     compile 'io.reactivex:rxandroid:1.2.0'
@@ -65,4 +84,8 @@ dependencies {
     compile 'com.wdullaer:materialdatetimepicker:2.3.0'
 
     compile 'com.github.rey5137:material:1.2.2'
+}
+
+kapt {
+    generateStubs = true
 }

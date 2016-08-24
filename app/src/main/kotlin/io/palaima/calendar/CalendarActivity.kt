@@ -21,16 +21,16 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.kennyc.bottomsheet.BottomSheet
 import com.kennyc.bottomsheet.BottomSheetListener
 import com.rey.material.widget.Spinner
-import com.squareup.sqlbrite.BriteDatabase
-import com.squareup.sqlbrite.SqlBrite
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog
 import com.wdullaer.materialdatetimepicker.time.TimePickerDialog
-import io.palaima.calendar.data.*
+import io.palaima.calendar.data.CalendarCategory
+import io.palaima.calendar.data.CalendarTask
+import io.palaima.calendar.data.Task
+import io.palaima.calendar.data.Type
 import io.palaima.eventscalendar.CalendarView
 import io.palaima.eventscalendar.DateHelper
 import io.palaima.eventscalendar.data.CalendarEvent
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
+import io.realm.Realm
 import rx.subscriptions.Subscriptions
 import timber.log.Timber
 import java.text.SimpleDateFormat
@@ -50,19 +50,14 @@ class CalendarActivity : AppCompatActivity() {
     @BindView(R.id.currentDate)
     lateinit var currentDateLabel: TextView
 
-    private var database: BriteDatabase? = null
     private var categoriesUpdateSubscription = Subscriptions.empty()
 
-    private val categories = ArrayList<MyCategory>()
-    private val events = ArrayList<MyEvent>()
+    private val categories = ArrayList<CalendarCategory>()
+    private val events = ArrayList<CalendarTask>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calendar)
-
-        val sqlBrite = SqlBrite.create()
-        database = sqlBrite.wrapDatabaseHelper(DatabaseOpenHelper(this), Schedulers.io())
-
         ButterKnife.bind(this)
 
         val toolbar = ButterKnife.findById<Toolbar>(this, R.id.toolbar)
@@ -70,13 +65,40 @@ class CalendarActivity : AppCompatActivity() {
 
         bindActiveDate()
 
-        val categoriesQuery = database!!.createQuery(CategoryEntity.TABLE_NAME, CategoryEntity.SELECT_ALL)
+        val realm = Realm.getDefaultInstance()
+        categoriesUpdateSubscription = realm.where(Type::class.java)
+                .findAllAsync()
+                .asObservable()
+                .filter { it.isLoaded }
+                .map {
+                    val categories = mutableListOf<CalendarCategory>()
+                    val tasks = mutableListOf<CalendarTask>()
+                    it.forEach {
+                        val type = it
+                        categories.add(CalendarCategory.from(type))
+                        it.tasks.forEach {
+                            tasks.add(CalendarTask.from(it, type))
+                        }
+                    }
+
+                    Pair(categories.toList(), tasks.toList())
+                }
+                .subscribe({
+                    val (categories, tasks) = it
+                    reloadCategories(categories)
+                    reloadEvents(tasks)
+
+                }, {
+
+                })
+
+       /* val categoriesQuery = database!!.createQuery(CategoryEntity.TABLE_NAME, CategoryEntity.SELECT_ALL)
         categoriesUpdateSubscription = categoriesQuery.map { query ->
             val cursor = query.run()
-            val entities = ArrayList<MyCategory>()
+            val entities = ArrayList<CalendarCategory>()
             if (cursor != null) {
                 while (cursor.moveToNext()) {
-                    entities.add(MyCategory.from(CategoryEntity.MAPPER.map(cursor)))
+                    entities.add(CalendarCategory.from(CategoryEntity.MAPPER.map(cursor)))
                 }
             }
             entities
@@ -86,14 +108,14 @@ class CalendarActivity : AppCompatActivity() {
 
         categoriesUpdateSubscription = eventsQuery.map { query ->
             val cursor = query.run()
-            val entities = ArrayList<MyEvent>()
+            val entities = ArrayList<CalendarTask>()
             if (cursor != null) {
                 while (cursor.moveToNext()) {
-                    entities.add(MyEvent.from(EventEntity.MAPPER.map(cursor)))
+                    entities.add(CalendarTask.from(EventEntity.MAPPER.map(cursor)))
                 }
             }
             entities
-        }.observeOn(AndroidSchedulers.mainThread()).subscribe { events -> reloadEvents(events) }
+        }.observeOn(AndroidSchedulers.mainThread()).subscribe { events -> reloadEvents(events) }*/
     }
 
     override fun onDestroy() {
@@ -125,16 +147,16 @@ class CalendarActivity : AppCompatActivity() {
     @OnClick(R.id.previous_day)
     fun onPreviousDayClick() {
         Timber.d("onPreviousDayClick")
-        val date = DateHelper.previousDay(calendarView!!.config.activeDate)
-        calendarView!!.config().activeDate(date).set()
+        val date = DateHelper.previousDay(calendarView.config.activeDate)
+        calendarView.config().activeDate(date).set()
         bindActiveDate()
     }
 
     @OnClick(R.id.next_day)
     fun onNextDayClick() {
         Timber.d("onNextDayClick")
-        val date = DateHelper.nextDay(calendarView!!.config.activeDate)
-        calendarView!!.config().activeDate(date).set()
+        val date = DateHelper.nextDay(calendarView.config.activeDate)
+        calendarView.config().activeDate(date).set()
         bindActiveDate()
     }
 
@@ -160,7 +182,7 @@ class CalendarActivity : AppCompatActivity() {
                 } else if (itemId == R.id.action_calendar_remove_category) {
                     openRemoveCategoryDialog()
                 } else if (itemId == R.id.action_calendar_remove_event) {
-                    calendarView!!.config().events(emptyList<CalendarEvent<*>>()).set()
+                    calendarView.config().events(emptyList<CalendarEvent<*>>()).set()
                 } else {
                     throw IllegalStateException("Menu action is not supported")
                 }
@@ -172,27 +194,43 @@ class CalendarActivity : AppCompatActivity() {
         }).show()
     }
 
-    private fun reloadCategories(categories: List<MyCategory>) {
+    private fun reloadCategories(categories: List<CalendarCategory>) {
         this.categories.clear()
         this.categories.addAll(categories)
-        this.calendarView!!.config().categories(categories).set()
+        this.calendarView.config().categories(categories).set()
     }
 
-    private fun reloadEvents(events: List<MyEvent>) {
+    private fun reloadEvents(events: List<CalendarTask>) {
         this.events.clear()
         this.events.addAll(events)
-        this.calendarView!!.config().events(events).set()
+        this.calendarView.config().events(events).set()
     }
 
     private fun openAddCategoryDialog() {
-        MaterialDialog.Builder(this).cancelable(true).autoDismiss(true).title("Create category").inputType(InputType.TYPE_CLASS_TEXT).inputRangeRes(2, 10, R.color.md_edittext_error).input("Category name", "", false) { dialog, input -> database!!.insert(CategoryEntity.TABLE_NAME, CategoryEntity.marshal().name(input.toString()).asContentValues()) }.positiveText("Create").negativeText("Cancel").build().show()
+        MaterialDialog.Builder(this)
+                .cancelable(true)
+                .autoDismiss(true)
+                .title("Create category")
+                .inputType(InputType.TYPE_CLASS_TEXT)
+                .inputRangeRes(2, 10, R.color.md_edittext_error)
+                .input("Type name", "", false)
+                { dialog, input ->
+                    val realm = Realm.getDefaultInstance()
+                    val type = realm.createObject(Type::class.java)
+                    type.name = input.toString()
+                    //database!!.insert(CategoryEntity.TABLE_NAME, CategoryEntity.marshal().name(input.toString()).asContentValues())
+                }
+                .positiveText("Create").negativeText("Cancel").build()
+                .show()
     }
 
     private fun openAddEventDialog() {
         val now = Calendar.getInstance()
         val selectedStartDate = Calendar.getInstance()
         val selectedEndDate = Calendar.getInstance()
-        val eventMarshal = EventEntity.marshal()
+
+        val realm = Realm.getDefaultInstance()
+        val task = realm.createObject(Task::class.java)
 
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_event_create, null)
 
@@ -203,11 +241,21 @@ class CalendarActivity : AppCompatActivity() {
         val durationSpinner = ButterKnife.findById<Spinner>(view, R.id.dialog_create_event_duration_spinner)
         val categorySpinner = ButterKnife.findById<Spinner>(view, R.id.dialog_create_event_category_spinner)
 
-        val materialDialog = MaterialDialog.Builder(this).cancelable(true).autoDismiss(true).title("Create event").customView(view, true).onPositive { dialog, which ->
-            val name = nameInput.text.toString().trim { it <= ' ' }
-
-            database!!.insert(EventEntity.TABLE_NAME, eventMarshal.title(name).description(descriptionInput.text.toString().trim { it <= ' ' }).startDate(selectedStartDate.timeInMillis).endDate(selectedEndDate.timeInMillis).asContentValues())
-        }.positiveText("Create").negativeText("Cancel").build()
+        val materialDialog = MaterialDialog.Builder(this)
+            .cancelable(true)
+            .autoDismiss(true)
+            .title("Create event")
+            .customView(view, true)
+            .onPositive { dialog, which ->
+                task.title = nameInput.text.toString().trim { it <= ' ' }
+                task.description = descriptionInput.text.toString().trim { it <= ' ' }
+                task.startTime = selectedStartDate.time
+                task.endTime = selectedEndDate.time
+                //database!!.insert(EventEntity.TABLE_NAME, task.title = name.description(descriptionInput.text.toString().trim { it <= ' ' }).startDate(selectedStartDate.timeInMillis).endDate(selectedEndDate.timeInMillis).asContentValues())
+            }
+            .positiveText("Create")
+            .negativeText("Cancel")
+            .build()
 
         val actionButton = materialDialog.getActionButton(DialogAction.POSITIVE)
         actionButton.isEnabled = false
@@ -273,8 +321,8 @@ class CalendarActivity : AppCompatActivity() {
                 selectedStartDate.get(Calendar.MINUTE) + minutes,
                 selectedStartDate.get(Calendar.SECOND))
 
-        eventMarshal.startDate(selectedStartDate.timeInMillis)
-        eventMarshal.endDate(selectedStartDate.timeInMillis)
+        task.startTime = selectedStartDate.time
+        task.endTime = selectedStartDate.time
 
 
         for (duration in durations) {
@@ -304,12 +352,20 @@ class CalendarActivity : AppCompatActivity() {
             titles.add(category.name)
         }
 
-        eventMarshal.categoryId(categories[0].id)
+        realm.where(Type::class.java)
+            .equalTo("id", categories[0].id)
+            .findFirst()
+            .tasks.add(task)
 
         val categoriesAdapter = ArrayAdapter(this, R.layout.row_spinner, titles)
         categoriesAdapter.setDropDownViewResource(R.layout.row_spinner_dropdown)
         categorySpinner.adapter = categoriesAdapter
-        categorySpinner.setOnItemSelectedListener { parent, view, position, id -> eventMarshal.categoryId(categories[position].id) }
+        categorySpinner.setOnItemSelectedListener { parent, view, position, id ->
+            realm.where(Type::class.java)
+                .equalTo("id", categories[position].id)
+                .findFirst()
+                .tasks.add(task)
+        }
 
 
         materialDialog.show()
@@ -340,15 +396,22 @@ class CalendarActivity : AppCompatActivity() {
             titles.add(category.name)
         }
 
+        val realm = Realm.getDefaultInstance()
+
+
         MaterialDialog.Builder(this).cancelable(true).autoDismiss(true).title("Select category to delete").items(titles).itemsCallbackSingleChoice(-1) { dialog, itemView, which, text ->
-            database!!.delete(CategoryEntity.TABLE_NAME, CategoryEntity._ID + " = " + categories[which].id)
+            //database!!.delete(CategoryEntity.TABLE_NAME, CategoryEntity._ID + " = " + categories[which].id)
+            val result = realm.where(Type::class.java)
+                    .equalTo("id", categories[which].id)
+                    .findFirst()
+            result.deleteFromRealm()
             true
         }.positiveText("Delete").negativeText("Cancel").build().show()
     }
 
     private fun bindActiveDate() {
         val simpleDateFormat = SimpleDateFormat("dd-MM-yyyy")
-        val date = simpleDateFormat.format(calendarView!!.config.activeDate)
-        currentDateLabel!!.text = date
+        val date = simpleDateFormat.format(calendarView.config.activeDate)
+        currentDateLabel.text = date
     }
 }
