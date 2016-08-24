@@ -1,4 +1,4 @@
-package io.palaima.calendar
+package io.palaima.calendar.ui
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -23,6 +23,7 @@ import com.kennyc.bottomsheet.BottomSheetListener
 import com.rey.material.widget.Spinner
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog
 import com.wdullaer.materialdatetimepicker.time.TimePickerDialog
+import io.palaima.calendar.R
 import io.palaima.calendar.data.CalendarCategory
 import io.palaima.calendar.data.CalendarTask
 import io.palaima.calendar.data.Task

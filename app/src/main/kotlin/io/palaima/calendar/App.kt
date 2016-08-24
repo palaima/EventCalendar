@@ -1,6 +1,7 @@
 package io.palaima.calendar
 
 import android.app.Application
+import com.squareup.leakcanary.LeakCanary
 import io.palaima.calendar.data.Task
 import io.palaima.calendar.data.Type
 import io.realm.Realm
@@ -20,6 +21,8 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        LeakCanary.install(this)
 
         val config = RealmConfiguration.Builder(this)
                 .deleteRealmIfMigrationNeeded()
@@ -45,11 +48,11 @@ class App : Application() {
             type.id = r.nextLong()
             type.name = "Home work"
 
-            for (i in 0..25) {
+            for (i in 0..300) {
                 val gc = GregorianCalendar(2016, 8, 1)
                 val day = randBetween(1, gc.getActualMaximum(GregorianCalendar.DAY_OF_MONTH))
 
-                val hour = randBetween(9, 22) //Hours will be displayed in between 9 to 22
+                val hour = randBetween(9, 20) //Hours will be displayed in between 9 to 22
                 val min = randBetween(0, 59)
                 val duration = randBetween(30, 90)
 

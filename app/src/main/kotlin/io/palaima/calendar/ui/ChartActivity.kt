@@ -1,12 +1,14 @@
-package io.palaima.calendar
+package io.palaima.calendar.ui
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import io.palaima.calendar.MyYAxisValueFormatter
+import io.palaima.calendar.R
 import io.palaima.chart.*
 import java.util.*
 
-class MainActivity : AppCompatActivity(), OnChartValueSelectedListener {
+class ChartActivity : AppCompatActivity(), OnChartValueSelectedListener {
 
     val mMonths = arrayOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec")
 
@@ -14,7 +16,7 @@ class MainActivity : AppCompatActivity(), OnChartValueSelectedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_chart)
 
         mChart = findViewById(R.id.chart1) as BarChart
         mChart.setOnChartValueSelectedListener(this)

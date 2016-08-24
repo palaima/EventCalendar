@@ -246,13 +246,16 @@ public class Config {
         private String noDataTextDescription;
         private Date activeDate;
         private ResourcesHolder resourcesHolder;
+        private SparseArray<SparseArray<List<EventRect>>> eventsMap;
+
+        private boolean isEventsDirty = false;
 
         public Builder(@NonNull CalendarView calendarView, @NonNull Config config) {
             this.calendarView = calendarView;
             this.config = config;
 
             mode = config.mode;
-            categories = config.categories;
+            categories = new ArrayList<>(config.categories);
             startHour = config.startHour;
             endHour = config.endHour;
             minOffset = config.minOffset;
@@ -267,6 +270,7 @@ public class Config {
             noDataTextDescription = config.noDataTextDescription;
             activeDate = config.activeDate;
             resourcesHolder = config.resourcesHolder;
+            eventsMap = config.eventsMap;
         }
 
         public CalendarView set() {
@@ -295,34 +299,38 @@ public class Config {
             config.noDataTextDescription = noDataTextDescription;
             config.activeDate = activeDate;
 
-            SparseArray<SparseArray<List<EventRect>>> eventsMap = new SparseArray<>();
+            if (isEventsDirty) {
+                SparseArray<SparseArray<List<EventRect>>> eventsMap = new SparseArray<>();
 
-            List<EventRect> eventRects = sortAndCacheEvents(calendarEvents);
+                List<EventRect> eventRects = sortAndCacheEvents(calendarEvents);
 
-            if (!eventRects.isEmpty()) {
+                if (!eventRects.isEmpty()) {
 
-                for (EventRect eventRect : eventRects) {
+                    for (EventRect eventRect : eventRects) {
 
-                    CalendarEvent event = eventRect.event;
+                        CalendarEvent event = eventRect.event;
 
-                    Date start = DateHelper.startOfTheDay(event.getStart());
+                        Date start = DateHelper.startOfTheDay(event.getStart());
 
-                    int key = start.hashCode();
-                    if (eventsMap.get(key) == null) {
-                        eventsMap.put(key, new SparseArray<List<EventRect>>());
-                    }
+                        int key = start.hashCode();
+                        if (eventsMap.get(key) == null) {
+                            eventsMap.put(key, new SparseArray<List<EventRect>>());
+                        }
 
-                    if (eventsMap.get(key).get(((int) event.getCategoryId())) == null) {
-                        eventsMap.get(key).put(((int) event.getCategoryId()), new ArrayList<EventRect>());
-                    }
+                        if (eventsMap.get(key).get(((int) event.getCategoryId())) == null) {
+                            eventsMap.get(key).put(((int) event.getCategoryId()), new ArrayList<EventRect>());
+                        }
 
-                    if (eventsMap.get(key) != null) {
-                        if (eventsMap.get(key).get(((int) event.getCategoryId())) != null) {
-                            eventsMap.get(key).get(((int) event.getCategoryId())).add(eventRect);
+                        if (eventsMap.get(key) != null) {
+                            if (eventsMap.get(key).get(((int) event.getCategoryId())) != null) {
+                                eventsMap.get(key).get(((int) event.getCategoryId())).add(eventRect);
+                            }
                         }
                     }
+
                 }
 
+                this.eventsMap = eventsMap;
             }
 
             config.eventsMap = eventsMap;
@@ -432,6 +440,8 @@ public class Config {
             if (events == null) {
                 events = new ArrayList<>();
             }
+
+            isEventsDirty = true;
 
             this.calendarEvents = events;
             return this;

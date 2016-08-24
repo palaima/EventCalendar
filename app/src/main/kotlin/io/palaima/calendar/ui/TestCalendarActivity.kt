@@ -1,4 +1,4 @@
-package io.palaima.calendar
+package io.palaima.calendar.ui
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,6 +10,9 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import butterknife.ButterKnife
+import io.palaima.calendar.R
+import io.palaima.calendar.ui.CalendarActivity
+import io.palaima.calendar.ui.ChartActivity
 import io.palaima.debugdrawer.DebugDrawer
 import io.palaima.debugdrawer.actions.ActionsModule
 import io.palaima.debugdrawer.commons.BuildModule
@@ -94,7 +97,7 @@ class TestCalendarActivity : AppCompatActivity() {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_chart) {
-            startActivity(Intent(this, MainActivity::class.java))
+            startActivity(Intent(this, ChartActivity::class.java))
             return true
         } else if (id == R.id.action_calendar) {
             startActivity(Intent(this, CalendarActivity::class.java))
