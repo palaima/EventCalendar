@@ -23,6 +23,7 @@ import io.palaima.calendar.data.CalendarCategory
 import io.palaima.calendar.data.CalendarTask
 import io.palaima.calendar.data.Task
 import io.palaima.calendar.data.Type
+import io.palaima.calendar.extention.executeSafe
 import io.palaima.calendar.ui.controller.base.BaseController
 import io.palaima.eventscalendar.CalendarView
 import io.palaima.eventscalendar.DateHelper
@@ -61,8 +62,7 @@ class HomeController: BaseController() {
 
         bindActiveDate()
 
-        val realm = Realm.getDefaultInstance()
-        categoriesUpdateSubscription = realm.where(Type::class.java)
+        categoriesUpdateSubscription = Realm.getDefaultInstance().where(Type::class.java)
                 .findAllAsync()
                 .asObservable()
                 .filter { it.isLoaded }
@@ -87,6 +87,7 @@ class HomeController: BaseController() {
                 }, {
                     Timber.e(it)
                 })
+
     }
 
     override fun unbind(view: View) {
@@ -191,7 +192,7 @@ class HomeController: BaseController() {
                 .inputRangeRes(2, 10, R.color.md_edittext_error)
                 .input("Type name", "", false)
                 { dialog, input ->
-                    Realm.getDefaultInstance().executeTransaction {
+                    Realm.getDefaultInstance().executeSafe {
                         val type = it.createObject(Type::class.java)
                         type.name = input.toString()
                     }
@@ -222,7 +223,7 @@ class HomeController: BaseController() {
                 .title("Create event")
                 .customView(view, true)
                 .onPositive { dialog, which ->
-                    Realm.getDefaultInstance().executeTransaction {
+                    Realm.getDefaultInstance().executeSafe {
                         val task = it.createObject(Task::class.java)
                         task.id = Random().nextLong()
                         task.title = nameInput.text.toString().trim { it <= ' ' }
@@ -368,7 +369,7 @@ class HomeController: BaseController() {
                 .title("Select category to delete")
                 .items(titles)
                 .itemsCallbackSingleChoice(-1) { dialog, itemView, which, text ->
-                    Realm.getDefaultInstance().executeTransaction {
+                    Realm.getDefaultInstance().executeSafe {
                         it.where(Type::class.java)
                             .equalTo("id", categories[which].id)
                             .findFirst()
