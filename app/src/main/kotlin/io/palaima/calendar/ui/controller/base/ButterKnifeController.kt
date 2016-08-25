@@ -9,7 +9,7 @@ import butterknife.ButterKnife
 import butterknife.Unbinder
 import com.bluelinelabs.conductor.rxlifecycle.RxController
 
-abstract class ButterKnifeController(args: Bundle? = null): RxController(args) {
+abstract class ButterKnifeController(args: Bundle?): RxController(args) {
 
     private lateinit var unbinder: Unbinder
 
@@ -23,8 +23,10 @@ abstract class ButterKnifeController(args: Bundle? = null): RxController(args) {
         return view
     }
 
+    @CallSuper
     protected open fun bind(view: View) { }
 
+    @CallSuper
     protected open fun unbind(view: View) { }
 
     @CallSuper

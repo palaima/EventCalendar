@@ -10,7 +10,7 @@ import com.bluelinelabs.conductor.Conductor
 import com.bluelinelabs.conductor.Router
 import com.bluelinelabs.conductor.RouterTransaction
 import io.palaima.calendar.R
-import io.palaima.calendar.ui.controller.HomeController
+import io.palaima.calendar.ui.controller.calendar.CalendarController
 
 class MainActivity: AppCompatActivity() {
 
@@ -29,7 +29,7 @@ class MainActivity: AppCompatActivity() {
 
         router = Conductor.attachRouter(this, container, savedInstanceState)
         if (!router.hasRootController()) {
-            router.setRoot(RouterTransaction.with(HomeController()))
+            router.setRoot(RouterTransaction.with(CalendarController()))
         }
     }
 

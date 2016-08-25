@@ -1,4 +1,4 @@
-package io.palaima.calendar.ui.controller
+package io.palaima.calendar.ui.controller.calendar
 
 import android.text.Editable
 import android.text.InputType
@@ -21,20 +21,15 @@ import com.wdullaer.materialdatetimepicker.time.TimePickerDialog
 import io.palaima.calendar.R
 import io.palaima.calendar.data.CalendarCategory
 import io.palaima.calendar.data.CalendarTask
-import io.palaima.calendar.data.Task
-import io.palaima.calendar.data.Type
-import io.palaima.calendar.extention.executeSafe
-import io.palaima.calendar.ui.controller.base.BaseController
+import io.palaima.calendar.ui.controller.base.PresenterController
 import io.palaima.eventscalendar.CalendarView
 import io.palaima.eventscalendar.DateHelper
 import io.palaima.eventscalendar.data.CalendarEvent
-import io.realm.Realm
-import rx.subscriptions.Subscriptions
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
 
-class HomeController: BaseController() {
+class CalendarController: PresenterController<CalendarContract.View, CalendarContract.Presenter>(), CalendarContract.View {
 
     @BindView(R.id.calendar_view) lateinit var calendarView: CalendarView
 
@@ -44,13 +39,15 @@ class HomeController: BaseController() {
 
     @BindView(R.id.currentDate) lateinit var currentDateLabel: TextView
 
-    private var categoriesUpdateSubscription = Subscriptions.empty()
-
     private val categories = ArrayList<CalendarCategory>()
     private val events = ArrayList<CalendarTask>()
 
     init {
         setHasOptionsMenu(true)
+    }
+
+    override fun createPresenter(): CalendarContract.Presenter {
+        return CalendarPresenter()
     }
 
     override fun inflateView(inflater: LayoutInflater, container: ViewGroup): View {
@@ -59,40 +56,15 @@ class HomeController: BaseController() {
 
     override fun bind(view: View) {
         super.bind(view)
-
         bindActiveDate()
-
-        categoriesUpdateSubscription = Realm.getDefaultInstance().where(Type::class.java)
-                .findAllAsync()
-                .asObservable()
-                .filter { it.isLoaded }
-                .map {
-                    val categories = mutableListOf<CalendarCategory>()
-                    val tasks = mutableListOf<CalendarTask>()
-                    it.forEach {
-                        val type = it
-                        categories.add(CalendarCategory.from(type))
-                        it.tasks.forEach {
-                            tasks.add(CalendarTask.from(it, type))
-                        }
-                    }
-
-                    Pair(categories.toList(), tasks.toList())
-                }
-                .subscribe({
-                    val (categories, tasks) = it
-                    reloadCategories(categories)
-                    reloadEvents(tasks)
-
-                }, {
-                    Timber.e(it)
-                })
-
     }
 
-    override fun unbind(view: View) {
-        super.unbind(view)
-        categoriesUpdateSubscription.unsubscribe()
+    override fun bindCategories(categories: List<CalendarCategory>) {
+        reloadCategories(categories)
+    }
+
+    override fun bindTasks(tasks: List<CalendarTask>) {
+        reloadTasks(tasks)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -115,6 +87,20 @@ class HomeController: BaseController() {
         return super.onOptionsItemSelected(item)
     }
 
+    private fun reloadCategories(categories: List<CalendarCategory>) {
+        Timber.d("reloadCategories ${categories.size}")
+        this.categories.clear()
+        this.categories.addAll(categories)
+        this.calendarView.config().categories(categories).set()
+    }
+
+    private fun reloadTasks(events: List<CalendarTask>) {
+        Timber.d("reloadTasks ${events.size}")
+        this.events.clear()
+        this.events.addAll(events)
+        this.calendarView.config().events(events).set()
+    }
+
     @OnClick(R.id.previous_day)
     fun onPreviousDayClick() {
         Timber.d("onPreviousDayClick")
@@ -134,7 +120,6 @@ class HomeController: BaseController() {
     @OnClick(R.id.fab)
     fun onFabClick() {
         Timber.d("onFabClick")
-
     }
 
     private fun calendarOptionsMenu() {
@@ -169,20 +154,6 @@ class HomeController: BaseController() {
                 .show()
     }
 
-    private fun reloadCategories(categories: List<CalendarCategory>) {
-        Timber.d("reloadCategories ${categories.size}")
-        this.categories.clear()
-        this.categories.addAll(categories)
-        this.calendarView.config().categories(categories).set()
-    }
-
-    private fun reloadEvents(events: List<CalendarTask>) {
-        Timber.d("reloadEvents ${events.size}")
-        this.events.clear()
-        this.events.addAll(events)
-        this.calendarView.config().events(events).set()
-    }
-
     private fun openAddCategoryDialog() {
         MaterialDialog.Builder(activity)
                 .cancelable(true)
@@ -192,10 +163,7 @@ class HomeController: BaseController() {
                 .inputRangeRes(2, 10, R.color.md_edittext_error)
                 .input("Type name", "", false)
                 { dialog, input ->
-                    Realm.getDefaultInstance().executeSafe {
-                        val type = createObject(Type::class.java)
-                        type.name = input.toString()
-                    }
+                    presenter().addCategory(input.toString())
                 }
                 .positiveText("Create")
                 .negativeText("Cancel")
@@ -223,19 +191,13 @@ class HomeController: BaseController() {
                 .title("Create event")
                 .customView(view, true)
                 .onPositive { dialog, which ->
-                    Realm.getDefaultInstance().executeSafe {
-                        val task = createObject(Task::class.java)
-                        task.id = Random().nextLong()
-                        task.title = nameInput.text.toString().trim { it <= ' ' }
-                        task.description = descriptionInput.text.toString().trim { it <= ' ' }
-                        task.startTime = selectedStartDate.time
-                        task.endTime = selectedEndDate.time
-
-                        where(Type::class.java)
-                                .equalTo("id", selectedCategoryId)
-                                .findFirst()
-                                .tasks.add(task)
-                    }
+                    presenter().addTask(
+                            selectedCategoryId,
+                            nameInput.text.toString().trim { it <= ' ' },
+                            descriptionInput.text.toString().trim { it <= ' ' },
+                            selectedStartDate.time,
+                            selectedEndDate.time
+                    )
                 }
                 .positiveText("Create")
                 .negativeText("Cancel")
@@ -369,13 +331,7 @@ class HomeController: BaseController() {
                 .title("Select category to delete")
                 .items(titles)
                 .itemsCallbackSingleChoice(-1) { dialog, itemView, which, text ->
-                    Realm.getDefaultInstance().executeSafe {
-                        where(Type::class.java)
-                            .equalTo("id", categories[which].id)
-                            .findFirst()
-                            .deleteFromRealm()
-                    }
-
+                    presenter().removeCategory(categories[which].id)
                     true
                 }
                 .positiveText("Delete")

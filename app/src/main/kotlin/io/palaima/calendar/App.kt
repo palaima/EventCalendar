@@ -43,7 +43,7 @@ class App : Application() {
 
         val r = Random(42)
         Realm.getDefaultInstance().executeSafe {
-            val type = it.createObject(Type::class.java)
+            val type = createObject(Type::class.java)
             type.id = r.nextLong()
             type.name = "Home work"
 
@@ -60,7 +60,7 @@ class App : Application() {
                 gc.set(GregorianCalendar.MINUTE, min)
 
                 val id = r.nextLong()
-                val task = it.createObject(Task::class.java)
+                val task = createObject(Task::class.java)
                 task.id = id
                 task.startTime = gc.time
                 task.endTime = Date(gc.timeInMillis.plus(duration * 60 * 1000))
