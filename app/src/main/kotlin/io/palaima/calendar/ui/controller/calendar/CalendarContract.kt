@@ -21,5 +21,7 @@ interface CalendarContract {
         abstract fun addTask(categoryId: Long, name: String, description: String?, startDate: Date, endDate: Date)
 
         abstract fun removeCategory(categoryId: Long)
+
+        abstract fun reload()
     }
 }

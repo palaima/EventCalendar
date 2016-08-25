@@ -120,6 +120,7 @@ class CalendarController: PresenterController<CalendarContract.View, CalendarCon
     @OnClick(R.id.fab)
     fun onFabClick() {
         Timber.d("onFabClick")
+        presenter().reload()
     }
 
     private fun calendarOptionsMenu() {

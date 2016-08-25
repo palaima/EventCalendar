@@ -6,13 +6,37 @@ import io.palaima.calendar.data.Task
 import io.palaima.calendar.data.Type
 import io.palaima.calendar.extention.executeSafe
 import io.realm.Realm
+import rx.Observable
+import rx.android.schedulers.AndroidSchedulers
 import rx.subscriptions.Subscriptions
 import timber.log.Timber
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class CalendarPresenter : CalendarContract.Presenter() {
 
     private var categoriesUpdateSubscription = Subscriptions.empty()
+
+    override fun bind(view: CalendarContract.View) {
+        super.bind(view)
+        categoriesUpdateSubscription = load()
+                .subscribe({
+                    val (categories, tasks) = it
+                    view().bindCategories(categories)
+                    view().bindTasks(tasks)
+                }, {
+                    Timber.e(it)
+                })
+    }
+
+    override fun unbind(view: CalendarContract.View) {
+        super.unbind(view)
+    }
+
+    override fun destroy() {
+        categoriesUpdateSubscription.unsubscribe()
+        super.destroy()
+    }
 
     override fun removeCategory(categoryId: Long) {
         Realm.getDefaultInstance().executeSafe {
@@ -47,9 +71,21 @@ class CalendarPresenter : CalendarContract.Presenter() {
         }
     }
 
-    override fun bind(view: CalendarContract.View) {
-        super.bind(view)
-        categoriesUpdateSubscription = Realm.getDefaultInstance().where(Type::class.java)
+    override fun reload() {
+        categoriesUpdateSubscription = load()
+            .debounce(10, TimeUnit.SECONDS)
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                val (categories, tasks) = it
+                view().bindCategories(categories)
+                view().bindTasks(tasks)
+            }, {
+                Timber.e(it)
+            })
+    }
+
+    fun load(): Observable<Pair<List<CalendarCategory>, List<CalendarTask>>> {
+        return Realm.getDefaultInstance().where(Type::class.java)
                 .findAllAsync()
                 .asObservable()
                 .filter { it.isLoaded }
@@ -66,18 +102,6 @@ class CalendarPresenter : CalendarContract.Presenter() {
 
                     Pair(categories.toList(), tasks.toList())
                 }
-                .subscribe({
-                    val (categories, tasks) = it
-                    view().bindCategories(categories)
-                    view().bindTasks(tasks)
-                }, {
-                    Timber.e(it)
-                })
-    }
-
-    override fun unbind(view: CalendarContract.View) {
-        categoriesUpdateSubscription.unsubscribe()
-        super.unbind(view)
     }
 
 }
